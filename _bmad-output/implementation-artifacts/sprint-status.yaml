@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-18T09:50:34Z
-last_updated: 2026-05-18T10:01:00Z
+last_updated: 2026-05-18T10:17:00Z
 project: Reverse Startup Leaderboard
 project_key: NOKEY
 tracking_system: file-system
@@ -43,7 +43,7 @@ story_location: /Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/im
 
 development_status:
   epic-1: in-progress
-  1-1-project-initialization-ui-foundation: ready-for-dev
+  1-1-project-initialization-ui-foundation: review
   1-2-user-authentication-profile-management: backlog
   1-3-core-leaderboard-data-engine: backlog
   1-4-real-time-leaderboard-view-badges: backlog

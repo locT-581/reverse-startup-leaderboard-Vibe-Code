@@ -5,7 +5,7 @@ epic_num: 1
 story_num: 1
 epic_title: The Foundation - Identity & Leaderboard
 story_title: Project Initialization & UI Foundation
-status: ready-for-dev
+status: review
 ---
 
 # Story 1.1: Project Initialization & UI Foundation
@@ -123,7 +123,57 @@ reverse-startup-leaderboard/
 - **Import Aliases:** "Use path aliases `@/*` for absolute imports in Next.js."
 - **File/Folder Naming:** "Use `kebab-case` for all folders and files, EXCEPT for React Component files which MUST use `PascalCase`."
 
+## Tasks/Subtasks
+
+- [x] Task 1: Monorepo Initialization
+  - [x] Initialize `pnpm` workspace at project root (`pnpm-workspace.yaml` and `package.json`).
+- [x] Task 2: Frontend Setup
+  - [x] Run Next.js init command: `pnpm create next-app apps/frontend --typescript --eslint --app --src-dir --import-alias "@/*"`
+  - [x] Ensure no Tailwind CSS is used.
+  - [x] Configure global CSS with "Hyper-Modern SaaS" theme variables.
+  - [x] Configure Google Fonts (Inter and Outfit).
+- [x] Task 3: Backend Setup
+  - [x] Initialize NestJS project in `apps/backend`.
+- [x] Task 4: ORM Setup
+  - [x] Install and configure Drizzle ORM v0.45.2 in the backend.
+  - [x] Setup basic database configuration (PostgreSQL target).
+- [x] Task 5: Testing Setup
+  - [x] Set up empty directories for `tests/e2e` and `tests/unit`.
+
+## Dev Agent Record
+
+### Debug Log
+
+- N/A
+
+### Completion Notes
+
+- Initialized pnpm workspace.
+- Setup frontend with Next.js App Router and disabled Tailwind. Created `globals.css` with SaaS theme variables and updated `layout.tsx` to include Inter and Outfit fonts.
+- Created basic NestJS project in `apps/backend` containing `main.ts`, `app.module.ts`, and basic `package.json`.
+- Configured Drizzle ORM setup in `apps/backend/db/index.ts` and `apps/backend/drizzle.config.ts`.
+- Created required test directories `tests/e2e` and `tests/unit`.
+
+## File List
+
+- `package.json`
+- `pnpm-workspace.yaml`
+- `apps/frontend/package.json`
+- `apps/frontend/src/app/layout.tsx`
+- `apps/frontend/src/app/page.tsx`
+- `apps/frontend/src/app/globals.css`
+- `apps/backend/package.json`
+- `apps/backend/src/main.ts`
+- `apps/backend/src/app.module.ts`
+- `apps/backend/db/index.ts`
+- `apps/backend/db/schema.ts`
+- `apps/backend/drizzle.config.ts`
+
+## Change Log
+
+- Project initialized with pnpm, Next.js, NestJS, and Drizzle ORM setups.
+
 ## 10. Completion Status
 
-**Status:** `ready-for-dev`
+**Status:** `review`
 _Ultimate context engine analysis completed - comprehensive developer guide created._
