@@ -110,7 +110,8 @@ The core differentiator is the concept of "Collective Chaos." The product's true
 ### Journey Requirements Summary
 
 - **Anti-UX Interaction Engine:** Custom frontend components for vibrating buttons, click-tracking, and complex, intentionally frustrating form validations (e.g., character count ratios, Ad Captchas).
-- **Real-Time Sabotage & State Management:** A robust backend capable of processing microtransactions and instantly broadcasting state changes (like CSS overrides or text blurring) to all connected clients via WebSockets or Server-Sent Events.
+- **Standalone Backend Service:** A dedicated NestJS backend service responsible for managing state, enforcing ACID properties, handling JWT authentication, and broadcasting real-time state changes via WebSockets.
+- **MVP Timeline Adjustment:** The MVP timeline is extended by ~1-2 weeks to accommodate the setup and implementation of the custom backend infrastructure.
 - **Reverse Moderation Dashboard:** An administrative interface built around penalizing logic rather than toxicity, including features to force avatar changes and deduct points.
 - **Monetization & Virtual Economy:** Integration with a payment gateway (like Stripe) to purchase "Sabotage Packs," and a secure ledger system to track "Wasted Calories" and penalty taxes.
 
