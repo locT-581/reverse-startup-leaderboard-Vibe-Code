@@ -1,0 +1,248 @@
+You are an Acceptance Auditor. Review this diff against the spec and context docs.
+Check for: violations of acceptance criteria, deviations from spec intent, missing implementation of specified behavior, contradictions between spec constraints and actual code.
+Output findings as a Markdown list. Each finding: one-line title, which AC/constraint it violates, and evidence from the diff.
+
+<spec>
+Please read the spec at: /Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/implementation-artifacts/1-1-project-initialization-ui-foundation.md
+</spec>
+
+<context>
+Please read the project context at: /Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/project-context.md
+</context>
+
+<diff>
+diff --git a/apps/backend/db/index.ts b/apps/backend/db/index.ts
+new file mode 100644
+index 0000000..4a9baff
+--- /dev/null
++++ b/apps/backend/db/index.ts
+@@ -0,0 +1,8 @@
++import { drizzle } from 'drizzle-orm/node-postgres';
++import { Pool } from 'pg';
++
++const pool = new Pool({
++  connectionString: process.env.DATABASE_URL,
++});
++
++export const db = drizzle(pool);
+diff --git a/apps/backend/db/schema.ts b/apps/backend/db/schema.ts
+new file mode 100644
+index 0000000..a834642
+--- /dev/null
++++ b/apps/backend/db/schema.ts
+@@ -0,0 +1 @@
++// Schema definitions will go here
+diff --git a/apps/backend/drizzle.config.ts b/apps/backend/drizzle.config.ts
+new file mode 100644
+index 0000000..286e71a
+--- /dev/null
++++ b/apps/backend/drizzle.config.ts
+@@ -0,0 +1,10 @@
++import { defineConfig } from 'drizzle-kit';
++
++export default defineConfig({
++  schema: './db/schema.ts',
++  out: './drizzle',
++  dialect: 'postgresql',
++  dbCredentials: {
++    url: process.env.DATABASE_URL!,
++  },
++});
+diff --git a/apps/backend/package.json b/apps/backend/package.json
+new file mode 100644
+index 0000000..c515b36
+--- /dev/null
++++ b/apps/backend/package.json
+@@ -0,0 +1,29 @@
++{
++  "name": "backend",
++  "version": "0.1.0",
++  "private": true,
++  "scripts": {
++    "build": "nest build",
++    "start": "nest start",
++    "start:dev": "nest start --watch"
++  },
++  "dependencies": {
++    "@nestjs/common": "^10.0.0",
++    "@nestjs/core": "^10.0.0",
++    "@nestjs/platform-express": "^10.0.0",
++    "reflect-metadata": "^0.2.0",
++    "rxjs": "^7.8.1",
++    "drizzle-orm": "0.45.2",
++    "pg": "^8.11.3"
++  },
++  "devDependencies": {
++    "@nestjs/cli": "^10.0.0",
++    "@nestjs/schematics": "^10.0.0",
++    "@nestjs/testing": "^10.0.0",
++    "@types/express": "^4.17.17",
++    "@types/node": "^20.3.1",
++    "typescript": "^5.1.3",
++    "drizzle-kit": "^0.30.4",
++    "@types/pg": "^8.11.0"
++  }
++}
+diff --git a/apps/backend/src/app.module.ts b/apps/backend/src/app.module.ts
+new file mode 100644
+index 0000000..ee5f2c9
+--- /dev/null
++++ b/apps/backend/src/app.module.ts
+@@ -0,0 +1,8 @@
++import { Module } from '@nestjs/common';
++
++@Module({
++  imports: [],
++  controllers: [],
++  providers: [],
++})
++export class AppModule {}
+diff --git a/apps/backend/src/main.ts b/apps/backend/src/main.ts
+new file mode 100644
+index 0000000..7d4c162
+--- /dev/null
++++ b/apps/backend/src/main.ts
+@@ -0,0 +1,8 @@
++import { NestFactory } from '@nestjs/core';
++import { AppModule } from './app.module';
++
++async function bootstrap() {
++  const app = await NestFactory.create(AppModule);
++  await app.listen(3001);
++}
++bootstrap();
+diff --git a/apps/frontend/package.json b/apps/frontend/package.json
+new file mode 100644
+index 0000000..74b4e68
+--- /dev/null
++++ b/apps/frontend/package.json
+@@ -0,0 +1,24 @@
++{
++  "name": "frontend",
++  "version": "0.1.0",
++  "private": true,
++  "scripts": {
++    "dev": "next dev",
++    "build": "next build",
++    "start": "next start",
++    "lint": "next lint"
++  },
++  "dependencies": {
++    "next": "15.0.0",
++    "react": "19.0.0",
++    "react-dom": "19.0.0"
++  },
++  "devDependencies": {
++    "typescript": "^5",
++    "@types/node": "^20",
++    "@types/react": "^18",
++    "@types/react-dom": "^18",
++    "eslint": "^8",
++    "eslint-config-next": "15.0.0"
++  }
++}
+diff --git a/apps/frontend/src/app/globals.css b/apps/frontend/src/app/globals.css
+new file mode 100644
+index 0000000..700cb2e
+--- /dev/null
++++ b/apps/frontend/src/app/globals.css
+@@ -0,0 +1,27 @@
++:root {
++  /* Core Colors */
++  --color-primary: #3b82f6;
++  --color-background: #ffffff;
++  --color-text: #111827;
++
++  /* Typography */
++  --font-body: var(--font-inter), sans-serif;
++  --font-heading: var(--font-outfit), sans-serif;
++}
++
++body {
++  background-color: var(--color-background);
++  color: var(--color-text);
++  font-family: var(--font-body);
++  margin: 0;
++  padding: 0;
++}
++
++h1,
++h2,
++h3,
++h4,
++h5,
++h6 {
++  font-family: var(--font-heading);
++}
+diff --git a/apps/frontend/src/app/layout.tsx b/apps/frontend/src/app/layout.tsx
+new file mode 100644
+index 0000000..c1aa3d9
+--- /dev/null
++++ b/apps/frontend/src/app/layout.tsx
+@@ -0,0 +1,25 @@
++import type { Metadata } from 'next';
++import { Inter, Outfit } from 'next/font/google';
++import './globals.css';
++
++const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
++const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
++
++export const metadata: Metadata = {
++  title: 'Reverse Startup Leaderboard',
++  description: 'Hyper-Modern SaaS',
++};
++
++export default function RootLayout({
++  children,
++}: {
++  children: React.ReactNode;
++}) {
++  return (
++    <html lang="en">
++      <body className={`${inter.variable} ${outfit.variable}`}>
++        {children}
++      </body>
++    </html>
++  );
++}
+diff --git a/apps/frontend/src/app/page.tsx b/apps/frontend/src/app/page.tsx
+new file mode 100644
+index 0000000..7e03a4e
+--- /dev/null
++++ b/apps/frontend/src/app/page.tsx
+@@ -0,0 +1,7 @@
++export default function Home() {
++  return (
++    <main>
++      <h1>Reverse Startup Leaderboard</h1>
++    </main>
++  );
++}
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000..8a79c19
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,13 @@
++{
++  "name": "reverse-startup-leaderboard",
++  "version": "1.0.0",
++  "description": "",
++  "main": "index.js",
++  "scripts": {
++    "test": "echo \"Error: no test specified\" && exit 1"
++  },
++  "keywords": [],
++  "author": "",
++  "license": "ISC",
++  "packageManager": "pnpm@10.33.0"
++}
+diff --git a/pnpm-workspace.yaml b/pnpm-workspace.yaml
+new file mode 100644
+index 0000000..06b6051
+--- /dev/null
++++ b/pnpm-workspace.yaml
+@@ -0,0 +1,2 @@
++packages:
++  - "apps/*"
+</diff>

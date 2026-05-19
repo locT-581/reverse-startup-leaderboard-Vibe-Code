@@ -5,7 +5,7 @@ epic_num: 1
 story_num: 1
 epic_title: The Foundation - Identity & Leaderboard
 story_title: Project Initialization & UI Foundation
-status: review
+status: done
 ---
 
 # Story 1.1: Project Initialization & UI Foundation
@@ -140,6 +140,17 @@ reverse-startup-leaderboard/
 - [x] Task 5: Testing Setup
   - [x] Set up empty directories for `tests/e2e` and `tests/unit`.
 
+### Review Findings
+
+- [x] [Review][Decision] Static DB Client Export Violates NestJS DI Patterns — In apps/backend/db/index.ts, db is instantiated and exported as a global variable. In NestJS, database connections should be wrapped as a custom provider in a module (e.g., DatabaseModule) to leverage NestJS dependency injection, lifecycle hooks, and enable clean mocking in unit tests.
+- [x] [Review][Patch] Missing Backend NestJS Configuration Files [apps/backend/]
+- [x] [Review][Patch] Missing Frontend Config Files (tsconfig.json, next.config.ts, eslintrc) [apps/frontend/]
+- [x] [Review][Patch] Hardcoded Backend Port 3001 in main.ts [apps/backend/src/main.ts:8]
+- [x] [Review][Patch] Unvalidated DATABASE_URL Environment Variable [apps/backend/db/index.ts:4]
+- [x] [Review][Patch] Missing Database Connection Pool Graceful Shutdown [apps/backend/db/index.ts]
+- [x] [Review][Patch] Monorepo Root Script Configuration is Empty [package.json]
+- [x] [Review][Patch] Redundant "main" Property in Root package.json [package.json:4]
+
 ## Dev Agent Record
 
 ### Debug Log
@@ -175,5 +186,5 @@ reverse-startup-leaderboard/
 
 ## 10. Completion Status
 
-**Status:** `review`
+**Status:** `done`
 _Ultimate context engine analysis completed - comprehensive developer guide created._
