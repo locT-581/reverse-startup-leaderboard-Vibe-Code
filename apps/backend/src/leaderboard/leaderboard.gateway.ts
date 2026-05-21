@@ -45,4 +45,9 @@ export class LeaderboardGateway implements OnGatewayConnection, OnGatewayDisconn
       this.logger.error(`Error broadcasting leaderboard: ${err.message}`, err.stack);
     }
   }
+
+  emitSabotage(targetId: string, effectType: string, authorId: string) {
+    if (!this.server) return;
+    this.server.emit('sabotage.deployed', { targetId, effectType, authorId });
+  }
 }

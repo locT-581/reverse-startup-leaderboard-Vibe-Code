@@ -45,4 +45,15 @@ export class SabotageController {
     const userId = req.user.sub;
     return this.sabotageService.getUserInventory(userId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('deploy')
+  async deploySabotage(
+    @Req() req: any,
+    @Body('postId') postId: string,
+    @Body('effectType') effectType: string,
+  ) {
+    const userId = req.user.sub;
+    return this.sabotageService.deploySabotage(userId, postId, effectType);
+  }
 }

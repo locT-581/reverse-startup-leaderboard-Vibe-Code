@@ -7,6 +7,8 @@ import GoldenRaspberryBadge from './GoldenRaspberryBadge';
 import CommentSection from './CommentSection';
 import { useAuthStore } from '../../../core/store/useAuthStore';
 import EvasiveButton from '../../anti-ux/components/EvasiveButton';
+import SabotageSelectionModal from '../../sabotage/components/SabotageSelectionModal';
+import { useChaosStore } from '../../../core/store/useChaosStore';
 import styles from './LeaderboardGrid.module.css';
 
 const AVATAR_MAP: Record<string, string> = {
@@ -24,6 +26,13 @@ export default function LeaderboardGrid() {
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const currentUser = useAuthStore((state) => state.user);
+  const activeSabotages = useChaosStore((state) => state.activeSabotages);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedSabotagePost, setSelectedSabotagePost] = useState<{
+    id: string;
+    title: string;
+    authorId: string;
+  } | null>(null);
 
   useEffect(() => {
     // 1. Fetch initial leaderboard data
@@ -93,13 +102,21 @@ export default function LeaderboardGrid() {
         {posts.map((post, index) => {
           const isFirst = index === 0;
           const isExpanded = expandedPostId === post.id;
+
+          // Check if this post is targeted by active sabotages where current user is NOT the author
+          const postSabotages = activeSabotages.filter(
+            (s) => s.targetId === post.id && s.authorId !== currentUser?.id && s.effectType !== 'deduct_calories'
+          );
+          const isDistorted = postSabotages.length > 0;
+          const rowDistortionClasses = postSabotages.map((s) => `post-${s.effectType}`).join(' ');
+
           return (
             <div
               key={post.id}
               className={`${styles.postRowWrapper} ${isFirst ? styles.firstPlace : ''}`}
             >
               <div
-                className={styles.postRow}
+                className={`${styles.postRow} ${rowDistortionClasses}`}
                 onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
                 role="button"
                 aria-expanded={isExpanded}
@@ -111,10 +128,17 @@ export default function LeaderboardGrid() {
                   }
                 }}
               >
-                <div className={styles.colRank}>
+                {/* Screen Reader Bypass - read clean text block if distorted */}
+                {isDistorted && (
+                  <div className={styles.srOnly}>
+                    Rank {index + 1}. Innovator: {post.author.username}. Idea: {post.title} - {post.content}. Wasted calories: {post.wastedCalories} kcal.
+                  </div>
+                )}
+
+                <div className={styles.colRank} aria-hidden={isDistorted ? "true" : undefined}>
                   <span className={styles.rankBadge}>{index + 1}</span>
                 </div>
-                <div className={styles.colAuthor}>
+                <div className={styles.colAuthor} aria-hidden={isDistorted ? "true" : undefined}>
                   <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
                     {AVATAR_MAP[post.author.avatar] || '👤'}
                   </span>
@@ -125,20 +149,42 @@ export default function LeaderboardGrid() {
                     )}
                   </span>
                 </div>
-                <div className={styles.colTitle}>
+                <div className={styles.colTitle} aria-hidden={isDistorted ? "true" : undefined}>
                   <div className={styles.postTitleText}>{post.title}</div>
                   <p className={styles.postSnippet}>{post.content}</p>
                 </div>
                 <div className={styles.colScore}>
                   <div className={styles.scoreContainer}>
-                    <span className={styles.scoreValue}>{post.wastedCalories} kcal</span>
+                    <span className={styles.scoreValue} aria-hidden={isDistorted ? "true" : undefined}>
+                      {post.wastedCalories} kcal
+                    </span>
                     {isFirst && (
-                      <div className={styles.badgeWrapper}>
+                      <div className={styles.badgeWrapper} aria-hidden={isDistorted ? "true" : undefined}>
                         <GoldenRaspberryBadge />
                       </div>
                     )}
-                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      <EvasiveButton targetId={post.id} targetType="post" />
+                    <div className={styles.actionButtons}>
+                      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <EvasiveButton targetId={post.id} targetType="post" />
+                      </div>
+                      {currentUser && (
+                        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <button
+                            className={styles.sabotageBtn}
+                            onClick={() => {
+                              setSelectedSabotagePost({
+                                id: post.id,
+                                title: post.title,
+                                authorId: post.author.id,
+                              });
+                              setIsModalOpen(true);
+                            }}
+                            aria-label={`Sabotage post by ${post.author.username}`}
+                          >
+                            Sabotage 😈
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -150,6 +196,18 @@ export default function LeaderboardGrid() {
           );
         })}
       </div>
+      {selectedSabotagePost && (
+        <SabotageSelectionModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedSabotagePost(null);
+          }}
+          postId={selectedSabotagePost.id}
+          postTitle={selectedSabotagePost.title}
+          postAuthorId={selectedSabotagePost.authorId}
+        />
+      )}
     </div>
   );
 }

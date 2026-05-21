@@ -81,3 +81,25 @@ h6 {
     animation: global-screen-shake 0.5s ease-in-out;
   }
 }
+
+/* Sabotage Body-level Distortions */
+body.sabotage-blur {
+  filter: blur(2px);
+}
+body.sabotage-comic-sans * {
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+}
+body.sabotage-papyrus * {
+  font-family: 'Papyrus', fantasy !important;
+}
+
+/* Sabotage Row-level Distortions */
+.post-blur {
+  filter: blur(4px);
+}
+.post-comic-sans * {
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+}
+.post-papyrus * {
+  font-family: 'Papyrus', fantasy !important;
+}

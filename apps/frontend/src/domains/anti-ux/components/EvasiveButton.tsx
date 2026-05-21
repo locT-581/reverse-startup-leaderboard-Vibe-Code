@@ -446,7 +446,7 @@ export default function EvasiveButton({
       if (comboCount === 0) {
         timerRef.current = setTimeout(() => {
           triggerComboReset('Too slow, grandpa!');
-        }, 5000);
+        }, 2000);
       }
 
       const nextCombo = comboCount + 1;

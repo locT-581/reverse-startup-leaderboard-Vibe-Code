@@ -200,6 +200,51 @@
   display: flex;
 }
 
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sabotageBtn {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
+}
+
+.sabotageBtn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
+}
+
+.sabotageBtn:active {
+  transform: translateY(0);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (max-width: 768px) {
   .headerRow {
     display: none;

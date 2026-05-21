@@ -1,9 +1,10 @@
-import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, Logger, BadRequestException, forwardRef } from '@nestjs/common';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { StripeService } from './stripe.service';
+import { LeaderboardGateway } from '../leaderboard/leaderboard.gateway';
 
 @Injectable()
 export class SabotageService {
@@ -12,6 +13,8 @@ export class SabotageService {
   constructor(
     @Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>,
     private readonly stripeService: StripeService,
+    @Inject(forwardRef(() => LeaderboardGateway))
+    private readonly leaderboardGateway: LeaderboardGateway,
   ) {}
 
   async getAvailablePacks() {
@@ -182,6 +185,93 @@ export class SabotageService {
         effectType: item.effectType,
         count: item.count,
       })),
+    };
+  }
+
+  async deploySabotage(userId: string, postId: string, effectType: string) {
+    // 1. Retrieve the user's inventory count for effectType
+    const userInventory = await this.db
+      .select()
+      .from(schema.userSabotages)
+      .where(
+        and(
+          eq(schema.userSabotages.userId, userId),
+          eq(schema.userSabotages.effectType, effectType),
+        ),
+      )
+      .limit(1);
+
+    if (userInventory.length === 0 || userInventory[0].count <= 0) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: 'Nice try, but your arsenal is empty. Visit the store to buy some power first!' },
+      });
+    }
+
+    const inventoryRecord = userInventory[0];
+
+    // 2. Retrieve the target post
+    const postRes = await this.db
+      .select()
+      .from(schema.posts)
+      .where(eq(schema.posts.id, postId))
+      .limit(1);
+
+    if (postRes.length === 0) {
+      throw new NotFoundException({
+        success: false,
+        error: { message: 'Post not found.' },
+      });
+    }
+
+    const post = postRes[0];
+
+    // 3. Calculate score deduction
+    let deduction = 0;
+    if (effectType === 'blur') {
+      deduction = 100;
+    } else if (effectType === 'comic_sans') {
+      deduction = 150;
+    } else if (effectType === 'papyrus') {
+      deduction = 150;
+    } else if (effectType === 'deduct_calories') {
+      deduction = 500;
+    }
+
+    const newWastedCalories = Math.max(0, post.wastedCalories - deduction);
+
+    // 4. Update the database in a transaction
+    await this.db.transaction(async (tx) => {
+      // Decrement count
+      await tx
+        .update(schema.userSabotages)
+        .set({
+          count: inventoryRecord.count - 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.userSabotages.id, inventoryRecord.id));
+
+      // Update post's wasted calories
+      await tx
+        .update(schema.posts)
+        .set({
+          wastedCalories: newWastedCalories,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.posts.id, post.id));
+    });
+
+    // 5. Broadcast updated leaderboard
+    await this.leaderboardGateway.broadcastLeaderboard();
+
+    // 6. Broadcast custom event sabotage.deployed
+    this.leaderboardGateway.emitSabotage(post.id, effectType, post.authorId);
+
+    return {
+      success: true,
+      data: {
+        newWastedCalories,
+      },
     };
   }
 }

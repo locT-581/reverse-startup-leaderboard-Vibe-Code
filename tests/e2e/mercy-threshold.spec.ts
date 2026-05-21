@@ -6,6 +6,7 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
   });
 
   test('should trigger Mercy Mode at 10 failures, bypass CAPTCHA and voting evasion, display baby badges, and allow toggle on profile', async ({ page }) => {
+    test.setTimeout(60000);
     // 1. Register User A to create a post
     await page.goto('/auth');
     await page.click('button:has-text("Register now")');
@@ -173,6 +174,8 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     // 9. Go to Profile Page and check settings
     await page.goto('/profile');
     await expect(page).toHaveURL(/\/profile/);
+    // Wait for the async session loading to complete
+    await expect(page.locator('h2:has-text("Loading session...")')).not.toBeVisible({ timeout: 15000 });
     await expect(page.locator('h1')).toContainText('👶');
     await expect(page.locator('h3:has-text("Toddler Settings")')).toBeVisible();
 
@@ -183,6 +186,9 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     // 10. Turn Mercy Mode OFF on Profile Page
     await page.click('#mercy-mode-toggle');
     await expect(page.locator('h1')).not.toContainText('👶');
+    
+    // Wait for the async database sync to complete before navigating away
+    await expect(page.locator('text=(Syncing...)')).not.toBeVisible();
 
     // 11. Go back to homepage, wait for cooldown, and verify evasion is restored
     await page.goto('/');

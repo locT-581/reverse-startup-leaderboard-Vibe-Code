@@ -1,31 +1,3 @@
-# Edge Case Hunter Prompt
-
-You are a pure path tracer acting as the **Edge Case Hunter**. Your goal is to review the following diff and identify missing error handling, control flow gaps, and unguarded edge cases directly reachable from the changed lines.
-You receive this diff and read access to the project.
-
-Follow the `bmad-review-edge-case-hunter` skill guidelines exactly:
-- Never comment on whether code is good or bad.
-- Only list boundaries and paths that lack explicit handling or guards in the diff/changed files.
-- Walk all control flow (conditionals, loops, error handlers, early returns) and domain boundaries (transitions of state/values).
-- Do NOT editorialize or add filler.
-
-## Output Format
-Return **ONLY** a valid JSON array of objects. Do not wrap in markdown blocks, do not explain anything. Each object must contain exactly these four fields and nothing else:
-```json
-[
-  {
-    "location": "file:start-end (or file:line when single line, or file:hunk when exact line unavailable)",
-    "trigger_condition": "one-line description (max 15 words)",
-    "guard_snippet": "minimal code sketch that closes the gap (single-line escaped string, no raw newlines or unescaped quotes)",
-    "potential_consequence": "what could actually go wrong (max 15 words)"
-  }
-]
-```
-If no unhandled paths are found, return `[]`.
-
-## Diff Content to Review
-
-```diff
 diff --git a/_bmad-output/implementation-artifacts/sprint-status.yaml b/_bmad-output/implementation-artifacts/sprint-status.yaml
 index c78107c..6f7d7cf 100644
 --- a/_bmad-output/implementation-artifacts/sprint-status.yaml
@@ -306,6 +278,7 @@ index 96850a9..da1063c 100644
 +.post-papyrus * {
 +  font-family: 'Papyrus', fantasy !important;
  }
+\ No newline at end of file
 diff --git a/apps/frontend/src/app/layout.tsx b/apps/frontend/src/app/layout.tsx
 index c1aa3d9..f4ca976 100644
 --- a/apps/frontend/src/app/layout.tsx
@@ -964,7 +937,7 @@ index 0000000..e91ddd1
 +    transform: none !important;
 +  }
 +}
-+diff --git a/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx b/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx
+diff --git a/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx b/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx
 new file mode 100644
 index 0000000..08b1ca1
 --- /dev/null
@@ -1231,6 +1204,7 @@ index cbcc1fb..59c67e2 100644
 +    "0394ea5bd1b8ace59db5-07faf36392e484a884ee"
 +  ]
  }
+\ No newline at end of file
 diff --git a/tests/e2e/sabotage-broadcast.spec.ts b/tests/e2e/sabotage-broadcast.spec.ts
 new file mode 100644
 index 0000000..2ae8c46
@@ -1362,4 +1336,3 @@ index 0000000..2ae8c46
 +    await contextB.close();
 +  });
 +});
-```

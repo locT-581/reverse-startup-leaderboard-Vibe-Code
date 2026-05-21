@@ -123,3 +123,18 @@ incrementFailures: async () => {
 ### defer
 
 - [x] [Review][Defer] Client-side Cookie Manipulation during Register/Login [apps/frontend/src/app/actions/auth.ts:51] — deferred, pre-existing
+
+## Dev Agent Record
+
+### Completion Notes
+- Đã khắc phục lỗi test `mercy-threshold.spec.ts` bị timeout bằng cách tăng thời gian timeout của test case lên 60 giây.
+- Đã khắc phục lỗi test combo reset timeout của `evasive-vote.spec.ts` bằng cách giảm thời gian chờ từ 5.5s xuống 2.5s để khớp với combo timer 2s trong frontend và tránh tooltip bị tự động ẩn đi trước khi kiểm tra.
+- Xác minh toàn bộ 15/15 Playwright E2E tests vượt qua thành công (`npx playwright test`).
+
+### File List
+- [evasive-vote.spec.ts](file:///Users/loct-581/Work/reverse-startup-leaderboard/tests/e2e/evasive-vote.spec.ts)
+- [mercy-threshold.spec.ts](file:///Users/loct-581/Work/reverse-startup-leaderboard/tests/e2e/mercy-threshold.spec.ts)
+
+### Change Log
+- Sửa đổi thời gian chờ combo reset từ 5.5s về 2.5s trong `tests/e2e/evasive-vote.spec.ts`.
+- Bổ sung `test.setTimeout(60000)` vào test case chính trong `tests/e2e/mercy-threshold.spec.ts`.

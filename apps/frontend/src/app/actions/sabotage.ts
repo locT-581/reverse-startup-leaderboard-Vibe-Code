@@ -139,3 +139,45 @@ export async function actionGetUserInventory(): Promise<ActionResponse<UserInven
     };
   }
 }
+
+export async function actionDeploySabotage(
+  postId: string,
+  effectType: string
+): Promise<ActionResponse<{ newWastedCalories: number }>> {
+  const cookieStore = await cookies();
+  const tokenObj = cookieStore.get('token');
+  const token = tokenObj?.value;
+
+  if (!token) {
+    return {
+      success: false,
+      error: { message: 'You must be authenticated to deploy sabotage.' },
+    };
+  }
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/sabotage/deploy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ postId, effectType }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: { message: data.error?.message || data.message || 'Failed to deploy sabotage.' },
+      };
+    }
+
+    return { success: true, data: data.data };
+  } catch (err) {
+    return {
+      success: false,
+      error: { message: 'Network error occurred while deploying sabotage.' },
+    };
+  }
+}

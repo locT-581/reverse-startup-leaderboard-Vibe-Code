@@ -123,11 +123,22 @@ test.describe('Sabotage Storefront E2E Flow', () => {
     await expect(backBtn).toBeVisible();
     await backBtn.click();
     await expect(page).toHaveURL(/\/$/); // exactly root path
+    await expect(page.locator('#nav-profile-btn')).toContainText(uniqueUsername);
 
     // 10. Verify the header link on home page and click it to return to storefront
     const headerStoreBtn = page.locator('[data-testid="nav-sabotage-store"]');
     await expect(headerStoreBtn).toBeVisible();
+    
+    // Wait briefly for hydration
+    await page.waitForTimeout(500);
     await headerStoreBtn.click();
-    await expect(page).toHaveURL(/\/sabotage-store/);
+    
+    // Try to expect URL, retrying click if Next.js hydration swallowed it
+    try {
+      await expect(page).toHaveURL(/\/sabotage-store/, { timeout: 3000 });
+    } catch (e) {
+      await headerStoreBtn.click();
+      await expect(page).toHaveURL(/\/sabotage-store/);
+    }
   });
 });

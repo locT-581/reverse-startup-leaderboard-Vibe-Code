@@ -137,7 +137,7 @@ test.describe('Evasive Vote Button E2E', () => {
     await voteBtn.click({ force: true });
     await expect(voteBtn).toHaveText(/COMBO: 1\/5/);
 
-    // Wait for the 2-second timer to expire (let's wait 2.5s)
+    // Wait for the 2-second combo timer to expire (let's wait 2500ms)
     await page.waitForTimeout(2500);
 
     // Verify combo reset and mockup tooltip shown

@@ -21,116 +21,123 @@ Output findings as a Markdown list. Each finding must include:
 
 ---
 
-## Spec File: Story 2.4: Anti-UX Tracker & Mercy Threshold
+## Spec File: Story 3.3: Real-Time Sabotage Broadcast
 
 ```markdown
----
-story_id: 2.4
-story_key: 2-4-anti-ux-tracker-mercy-threshold
-epic_num: 2
-story_num: 4
-epic_title: The Core Chaos - Posting, Voting & Mercy
-story_title: Anti-UX Tracker & Mercy Threshold
+story_id: 3.3
+story_key: 3-3-real-time-sabotage-broadcast
+epic_num: 3
+story_num: 3
+epic_title: Troll Capitalism - The Sabotage Store
+story_title: Real-Time Sabotage Broadcast
 status: review
----
 
-# Story 2.4: Anti-UX Tracker & Mercy Threshold
+# Story 3.3: Real-Time Sabotage Broadcast
 
 Status: review
 
-<!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
-
 ## Story
 
-As a frustrated user,
-I want the system to eventually take pity on me,
-so that I don't churn completely when I fail repeatedly.
+As a Troll Capitalist,
+I want to deploy my Sabotage Pack against a specific post,
+so that the target's screen instantly distorts and their score drops.
 
 ## Acceptance Criteria
 
-1. **Given** a user is logged in:
-   - **When** the user session loads (on mount in home or profile page)
-   - **Then** the frontend must initialize the Zustand `useMercyStore` with the user's persisted mercy state (`mercyFailures` and `isMercyActive`) from the user profile data.
-2. **Given** the user is interacting with Anti-UX components (e.g. triggering a combo reset on the `EvasiveButton`):
-   - **When** they fail the interaction, incrementing the failures counter
-   - **Then** the Zustand store must call the Server Action `actionSyncMercyState` to persist the updated failure count and active state to the database, ensuring persistence across page refreshes.
-3. **Given** the failures count reaches a threshold of 10 consecutive/cumulative failures:
-   - **When** the 10th failure is registered
-   - **Then** the Zustand store sets `isMercyActive` to `true` and syncs with the database.
-   - **And** displays a condescending modal/notification mocking the user's failure (e.g., "Activating toddler mode... Please enjoy this simplified interface since you clearly couldn't handle the basic version.").
-4. **Given** Mercy Mode is active (`isMercyActive` is `true`):
-   - **Then** all Anti-UX evasion logic on the `EvasiveButton` is disabled, allowing a single standard click/tap to submit votes.
-   - **And** the "Ad Captcha" modal is bypassed (calling `onSuccess` and closing immediately).
-   - **And** a public humiliation badge (emoji "👶" and text "Toddler Mode Active") is displayed on the user's profile page and next to their name in header navigation and post/comment authors on the leaderboard.
-5. **Given** the user is on the Profile Page:
-   - **When** they have accumulated at least 10 failures
-   - **Then** they see a toggle option to turn Mercy Mode ON or OFF.
-   - **And** toggling it OFF restores the Anti-UX evasion/captcha logic immediately and hides the humiliation badge (but retains their failure count in the database), while toggling it back ON returns the toddler mode benefits and badge.
+1. **Given** a logged-in user is on the Leaderboard page:
+   - **When** they click the "Sabotage 😈" button on a post row
+   - **Then** a `SabotageSelectionModal` modal opens, showing their active inventory of Sabotage Packs (Blur, Comic Sans, Papyrus, Calories Deduction) fetched via `actionGetUserInventory`.
+2. **Given** the user selects an available Sabotage Pack (inventory count > 0) and confirms deployment:
+   - **When** they click the "Deploy" button
+   - **Then** the interface displays a loading state (e.g. "Deploying...") using `useTransition` or `isPending` state.
+   - **And** calls the Server Action `actionDeploySabotage(postId, effectType)` to process the deployment.
+3. **Given** a Sabotage Pack deployment is triggered on the backend:
+   - **When** the backend verifies the user has at least 1 token of the selected `effectType` in their inventory
+   - **Then** it transactionally:
+     - Decrements the user's inventory count by 1 in `user_sabotages`.
+     - Deducts the specified calories from the target post's `wastedCalories`:
+       - `blur` deducts 100 Wasted Calories.
+       - `comic_sans` deducts 150 Wasted Calories.
+       - `papyrus` deducts 150 Wasted Calories.
+       - `deduct_calories` deducts 500 Wasted Calories.
+       - The score is capped at a minimum of 0 (points cannot go below 0).
+     - Updates the post record in the database.
+   - **And** broadcasts the updated leaderboard to all clients via the WebSocket event `leaderboard.updated`.
+   - **And** broadcasts the custom event `sabotage.deployed` with payload `{ targetId, effectType, authorId }` where `targetId` is the post's UUID, `effectType` is the visual distortion name, and `authorId` is the post author's UUID.
+4. **Given** a client is connected to the real-time WebSocket:
+   - **When** the client receives the `sabotage.deployed` event
+   - **Then** it adds the sabotage event to the Zustand store `useChaosStore` with a 15-second duration.
+5. **Given** an active visual sabotage in `useChaosStore`:
+   - **When** the logged-in user is the author of the targeted post (`authorId === currentUser.id`)
+   - **Then** the frontend applies the visual distortion class globally to `document.body` for 15 seconds:
+     - `blur` applies class `.sabotage-blur` which blurs the entire viewport (`filter: blur(2px)`).
+     - `comic_sans` applies class `.sabotage-comic-sans` which overrides all elements to use Comic Sans (`font-family: 'Comic Sans MS', 'Comic Sans', cursive !important`).
+     - `papyrus` applies class `.sabotage-papyrus` which overrides all elements to use Papyrus (`font-family: 'Papyrus', fantasy !important`).
+6. **Given** an active visual sabotage in `useChaosStore`:
+   - **When** the logged-in user is NOT the author of the targeted post
+   - **Then** the frontend applies the row-level class to the specific post row matching `targetId` inside `LeaderboardGrid` for 15 seconds:
+     - `blur` applies `.post-blur` (`filter: blur(4px)`).
+     - `comic_sans` applies `.post-comic-sans` (`font-family: 'Comic Sans MS', 'Comic Sans', cursive !important`).
+     - `papyrus` applies `.post-papyrus` (`font-family: 'Papyrus', fantasy !important`).
+7. **Given** any active visual sabotage in the client state:
+   - **When** the 15-second timer expires
+   - **Then** the class is removed from `document.body` or the leaderboard post row, restoring the original styling.
+8. **Given** a user has OS-level `prefers-reduced-motion: reduce` enabled:
+   - **When** a visual sabotage is active
+   - **Then** any vibrating, screen shaking, or flashing animations associated with the sabotage are automatically disabled.
+   - **And** the "Screen Reader Bypass" ensures that visually hidden, clean text is readable by assistive technologies, ignoring the visual blurs/distortions.
 
 ## Tasks / Subtasks
 
-- [x] Task 1: Database Migration & Schema Update (AC: 1, 2)
-  - [x] Update the `users` table in `apps/backend/db/schema.ts` to include:
-    - `mercyFailures: integer("mercy_failures").default(0).notNull()`
-    - `isMercyActive: boolean("is_mercy_active").default(false).notNull()`
-  - [x] Generate and run database migration to add these columns.
-- [x] Task 2: Backend Endpoints for Mercy Sync (AC: 1, 2)
-  - [x] Add `@Put('mercy')` endpoint protected by `JwtAuthGuard` in `apps/backend/src/auth/auth.controller.ts`.
-  - [x] Expose `updateMercy(userId: string, failures: number, isMercyActive: boolean)` in `apps/backend/src/auth/auth.service.ts` to update the user in the database.
-  - [x] Update `getLeaderboard` query in `apps/backend/src/leaderboard/leaderboard.service.ts` to include `isMercyActive` in the author details returned for posts and comments.
-- [x] Task 3: Frontend Server Actions & State (AC: 1, 2)
-  - [x] Update `UserProfile` interface in `apps/frontend/src/app/actions/auth.ts` to include `mercyFailures: number` and `isMercyActive: boolean`.
-  - [x] Implement Server Action `actionSyncMercyState(failures: number, isMercyActive: boolean)` in `apps/frontend/src/app/actions/auth.ts` to sync frontend store changes with the backend.
-  - [x] Update `useMercyStore.ts` Zustand store at `apps/frontend/src/core/store/useMercyStore.ts` to:
-    - Support a `setMercyState(failures: number, isMercyActive: boolean)` action to initialize the store from backend profile.
-    - Call `actionSyncMercyState` asynchronously whenever `failures` or `isMercyActive` updates.
-  - [x] Initialize the store state on application mount. For example, in `apps/frontend/src/app/page.tsx` and `apps/frontend/src/app/profile/page.tsx`, when `actionGetMe()` or auth state resolves, call `setMercyState` with user's profile values.
-- [x] Task 4: UI Integration (AC: 3, 4, 5)
-  - [x] Create a condescending Modal dialog in `apps/frontend/src/domains/anti-ux/components/MercyActivationModal.tsx` that triggers when `isMercyActive` becomes true for the first time.
-  - [x] Update `AdCaptchaModal.tsx` to read `bypass` prop correctly (it is already wired to bypass, but make sure to pass the `mercyActive` store value to it in `CreatePostModal.tsx` and `CommentSection.tsx`).
-  - [x] Display the "Humiliation Badge" (emoji `👶` or custom style) on:
-    - User's navigation button in `apps/frontend/src/app/page.tsx`
-    - Post row author name in `apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx`
-    - Comment row author name in `apps/frontend/src/domains/leaderboard/components/CommentSection.tsx`
-  - [x] Add the Mercy Mode Toggle to the Profile Page (`apps/frontend/src/app/profile/page.tsx`):
-    - Only display/enable the toggle if the user has accumulated at least 10 failures.
-    - Implement the toggle state change, which updates the Zustand store and dispatches `actionSyncMercyState` to persist the setting.
-    - Display the Humiliation Badge prominently on the profile page when active.
-- [x] Task 5: Testing & Verification (AC: 1-5)
-  - [x] Create E2E test file `tests/e2e/mercy-threshold.spec.ts` using Playwright.
-  - [x] Verify that:
-    - Missing the button 10 times increments the failures, pops up the mock modal, and persists active state.
-    - A page refresh maintains Mercy Mode active.
-    - Captchas are bypassed and Evasive Button evasion is turned off.
-    - Toggling Mercy Mode off on the Profile Page restores evasion logic and captcha, and removes the humiliation badges.
-
-## Dev Notes
-
-### Syncing Zustand with Server Actions
-
-When updating store failures, call the server action in a debounced or direct async action inside `useMercyStore.ts`:
-```typescript
-import { actionSyncMercyState } from '@/app/actions/auth';
-
-// ...
-incrementFailures: async () => {
-  const state = get();
-  const nextFailures = state.failures + 1;
-  const shouldActivate = nextFailures >= 10;
-  const nextMercyActive = state.isMercyActive || shouldActivate;
-
-  set({ failures: nextFailures, isMercyActive: nextMercyActive });
-  await actionSyncMercyState(nextFailures, nextMercyActive);
-}
-```
-
-### References
-
-- [PRD - Fallback (The Mercy Threshold)](file:///Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/planning-artifacts/prd.md#L161)
-- [UX Spec - The Mercy Threshold Prompt](file:///Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/planning-artifacts/ux-design-specification.md#L380)
-- [Architecture - Zustand Local State vs Server sync](file:///Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/planning-artifacts/architecture.md#L150)
-- [Previous Story - Evasive Vote Button](file:///Users/loct-581/Work/reverse-startup-leaderboard/_bmad-output/implementation-artifacts/2-3-the-evasive-vote-button.md)
-
+- [ ] **Task 1: Backend WebSocket Gateway Integration** (AC: 3)
+  - [ ] Add `emitSabotage(targetId: string, effectType: string, authorId: string)` in `LeaderboardGateway` (`apps/backend/src/leaderboard/leaderboard.gateway.ts`) to emit `sabotage.deployed` events.
+  - [ ] In `apps/backend/src/sabotage/sabotage.module.ts`, import `forwardRef(() => LeaderboardModule)` to resolve circular dependencies and gain access to the gateway.
+- [ ] **Task 2: Backend Deploy Endpoint & Service Logic** (AC: 3)
+  - [ ] Create `@Post('deploy')` in `SabotageController` (`apps/backend/src/sabotage/sabotage.controller.ts`), guarded by `JwtAuthGuard`.
+  - [ ] Implement `deploySabotage(userId: string, postId: string, effectType: string)` in `SabotageService` (`apps/backend/src/sabotage/sabotage.service.ts`):
+    - [ ] Retrieve the user's inventory count for `effectType`. If <= 0, throw a `BadRequestException` with a sarcastic error message (e.g. "Nice try, but your arsenal is empty. Visit the store to buy some power first!").
+    - [ ] Retrieve the target post. Throw `NotFoundException` if it doesn't exist.
+    - [ ] Update the database in a transaction:
+      - [ ] Decrement `user_sabotages.count` by 1.
+      - [ ] Calculate score deduction: `blur` (-100), `comic_sans` (-150), `papyrus` (-150), `deduct_calories` (-500).
+      - [ ] Update the post's `wastedCalories` (ensure a lower bound of 0).
+    - [ ] Call `LeaderboardGateway.broadcastLeaderboard()` to update everyone's scores.
+    - [ ] Call `LeaderboardGateway.emitSabotage(postId, effectType, post.authorId)` to broadcast the visual effect.
+- [ ] **Task 3: Frontend Server Actions & State Management** (AC: 2, 4, 5, 7)
+  - [ ] Implement `actionDeploySabotage(postId: string, effectType: string)` Server Action in `apps/frontend/src/app/actions/sabotage.ts`.
+  - [ ] Create `useChaosStore.ts` Zustand store in `apps/frontend/src/core/store/useChaosStore.ts`:
+    - [ ] State: `activeSabotages` as `{ id: string; targetId: string; effectType: string; authorId: string; expiresAt: number }[]`.
+    - [ ] Actions: `addSabotage`, `removeSabotage`, `clearExpired`.
+  - [ ] Create a client-side component `ChaosListener.tsx` (rendered in the root layout or root page):
+    - [ ] Connect to the Socket and listen for `sabotage.deployed`.
+    - [ ] Upon receiving the event, compute `expiresAt` (15 seconds from now) and call `addSabotage`.
+    - [ ] Periodically or via timeout clear expired sabotages.
+    - [ ] Monitor active sabotages: if any active sabotage matches `currentUser.id` as the `authorId`, dynamically add classes to `document.body` (e.g., `sabotage-blur`, `sabotage-comic-sans`, `sabotage-papyrus`). Remove them when no active matching sabotages remain.
+- [ ] **Task 4: UI Components & Styles** (AC: 1, 2, 5, 6, 8)
+  - [ ] Add class definitions to `apps/frontend/src/app/globals.css`:
+    - [ ] Body-level: `.sabotage-blur` (`filter: blur(2px)`), `.sabotage-comic-sans` (`font-family: 'Comic Sans MS', 'Comic Sans', cursive !important`), `.sabotage-papyrus` (`font-family: 'Papyrus', fantasy !important`).
+    - [ ] Row-level: `.post-blur` (`filter: blur(4px)`), `.post-comic-sans` (Comic Sans font), `.post-papyrus` (Papyrus font).
+    - [ ] Implement accessibility safety: ensure no motion-intensive animations run under `@media (prefers-reduced-motion: reduce)`.
+  - [ ] Create `SabotageSelectionModal.tsx` in `apps/frontend/src/domains/sabotage/components/`:
+    - [ ] Show count of each Sabotage type currently owned.
+    - [ ] Enable "Deploy" button if inventory count > 0.
+    - [ ] If inventory count is 0, show a link to the storefront: "Restock at the Sabotage Storefront".
+    - [ ] Wrap deployment in a standard transition spinner or loading text.
+  - [ ] Update `LeaderboardGrid.tsx` to:
+    - [ ] Add the "Sabotage 😈" trigger button to each post row.
+    - [ ] Wire it up to open `SabotageSelectionModal` with the post's ID.
+    - [ ] Read from `useChaosStore` to conditionally apply row-level classes (`.post-blur`, etc.) when the post is targeted.
+    - [ ] Ensure that for visual distortion, there is alternative descriptive hidden text so screen readers bypass the CSS sabotage effect.
+- [ ] **Task 5: E2E Playwright Testing** (AC: 1-8)
+  - [ ] Create `tests/e2e/sabotage-broadcast.spec.ts`:
+    - [ ] Register User A and create a post.
+    - [ ] Register User B, navigate to storefront, and buy a Blur Pack (inventory becomes 1).
+    - [ ] User B goes back to Leaderboard, clicks "Sabotage" on User A's post, opens modal, and clicks deploy.
+    - [ ] Verify User B's inventory is now 0.
+    - [ ] Verify User A's post score is decremented by 100 kcal on the leaderboard.
+    - [ ] Verify User A's post row has `.post-blur` or blur style applied.
+    - [ ] Authenticate as User A and verify that User A's screen body has `.sabotage-blur` class applied.
+    - [ ] Fast-forward or wait 15 seconds and verify the class is removed.
 ```
 
 ---
@@ -154,673 +161,220 @@ incrementFailures: async () => {
 ## Diff Content to Review
 
 ```diff
-diff --git a/apps/backend/db/schema.ts b/apps/backend/db/schema.ts
-index a967820..07355fb 100644
---- a/apps/backend/db/schema.ts
-+++ b/apps/backend/db/schema.ts
-@@ -1,4 +1,4 @@
--import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
-+import { pgTable, uuid, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
- import { relations } from "drizzle-orm";
+
+```
+diff --git a/_bmad-output/implementation-artifacts/sprint-status.yaml b/_bmad-output/implementation-artifacts/sprint-status.yaml
+index c78107c..6f7d7cf 100644
+--- a/_bmad-output/implementation-artifacts/sprint-status.yaml
++++ b/_bmad-output/implementation-artifacts/sprint-status.yaml
+@@ -1,5 +1,5 @@
+ # generated: 2026-05-18T09:50:34Z
+-# last_updated: 2026-05-21T17:06:21+07:00
++# last_updated: 2026-05-21T23:41:43+07:00
+ # project: Reverse Startup Leaderboard
+ # project_key: NOKEY
+ # tracking_system: file-system
+@@ -35,7 +35,7 @@
+ # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
  
- export const users = pgTable("users", {
-@@ -8,6 +8,8 @@ export const users = pgTable("users", {
-   avatar: text("avatar").default("default_avatar"),
-   wastedCalories: integer("wasted_calories").default(0).notNull(),
-   logicViolations: integer("logic_violations").default(0).notNull(),
-+  mercyFailures: integer("mercy_failures").default(0).notNull(),
-+  isMercyActive: boolean("is_mercy_active").default(false).notNull(),
-   createdAt: timestamp("created_at").defaultNow().notNull(),
-   updatedAt: timestamp("updated_at").defaultNow().notNull(),
- });
-diff --git a/apps/backend/drizzle/0002_typical_sebastian_shaw.sql b/apps/backend/drizzle/0002_typical_sebastian_shaw.sql
-new file mode 100644
-index 0000000..2637d0e
---- /dev/null
-+++ b/apps/backend/drizzle/0002_typical_sebastian_shaw.sql
-@@ -0,0 +1,14 @@
-+CREATE TABLE "comments" (
-+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-+	"post_id" uuid NOT NULL,
-+	"content" text NOT NULL,
-+	"wasted_calories" integer DEFAULT 0 NOT NULL,
-+	"author_id" uuid NOT NULL,
-+	"created_at" timestamp DEFAULT now() NOT NULL,
-+	"updated_at" timestamp DEFAULT now() NOT NULL
-+);
-+--> statement-breakpoint
-+ALTER TABLE "users" ADD COLUMN "mercy_failures" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
-+ALTER TABLE "users" ADD COLUMN "is_mercy_active" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-+ALTER TABLE "comments" ADD CONSTRAINT "comments_post_id_posts_id_fk" FOREIGN KEY ("post_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-+ALTER TABLE "comments" ADD CONSTRAINT "comments_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
-\ No newline at end of file
-diff --git a/apps/backend/drizzle/meta/0002_snapshot.json b/apps/backend/drizzle/meta/0002_snapshot.json
-new file mode 100644
-index 0000000..8ba2d0a
---- /dev/null
-+++ b/apps/backend/drizzle/meta/0002_snapshot.json
-@@ -0,0 +1,267 @@
-+{
-+  "id": "c8961ccb-7ced-48fb-942e-4e74c8819140",
-+  "prevId": "ff6eb2d0-a5cf-47a4-805d-be77c4a5f3aa",
-+  "version": "7",
-+  "dialect": "postgresql",
-+  "tables": {
-+    "public.comments": {
-+      "name": "comments",
-+      "schema": "",
-+      "columns": {
-+        "id": {
-+          "name": "id",
-+          "type": "uuid",
-+          "primaryKey": true,
-+          "notNull": true,
-+          "default": "gen_random_uuid()"
-+        },
-+        "post_id": {
-+          "name": "post_id",
-+          "type": "uuid",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "content": {
-+          "name": "content",
-+          "type": "text",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "wasted_calories": {
-+          "name": "wasted_calories",
-+          "type": "integer",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": 0
-+        },
-+        "author_id": {
-+          "name": "author_id",
-+          "type": "uuid",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "created_at": {
-+          "name": "created_at",
-+          "type": "timestamp",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": "now()"
-+        },
-+        "updated_at": {
-+          "name": "updated_at",
-+          "type": "timestamp",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": "now()"
-+        }
-+      },
-+      "indexes": {},
-+      "foreignKeys": {
-+        "comments_post_id_posts_id_fk": {
-+          "name": "comments_post_id_posts_id_fk",
-+          "tableFrom": "comments",
-+          "tableTo": "posts",
-+          "columnsFrom": [
-+            "post_id"
-+          ],
-+          "columnsTo": [
-+            "id"
-+          ],
-+          "onDelete": "cascade",
-+          "onUpdate": "no action"
-+        },
-+        "comments_author_id_users_id_fk": {
-+          "name": "comments_author_id_users_id_fk",
-+          "tableFrom": "comments",
-+          "tableTo": "users",
-+          "columnsFrom": [
-+            "author_id"
-+          ],
-+          "columnsTo": [
-+            "id"
-+          ],
-+          "onDelete": "cascade",
-+          "onUpdate": "no action"
-+        }
-+      },
-+      "compositePrimaryKeys": {},
-+      "uniqueConstraints": {},
-+      "policies": {},
-+      "checkConstraints": {},
-+      "isRLSEnabled": false
-+    },
-+    "public.posts": {
-+      "name": "posts",
-+      "schema": "",
-+      "columns": {
-+        "id": {
-+          "name": "id",
-+          "type": "uuid",
-+          "primaryKey": true,
-+          "notNull": true,
-+          "default": "gen_random_uuid()"
-+        },
-+        "title": {
-+          "name": "title",
-+          "type": "text",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "content": {
-+          "name": "content",
-+          "type": "text",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "wasted_calories": {
-+          "name": "wasted_calories",
-+          "type": "integer",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": 0
-+        },
-+        "author_id": {
-+          "name": "author_id",
-+          "type": "uuid",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "created_at": {
-+          "name": "created_at",
-+          "type": "timestamp",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": "now()"
-+        },
-+        "updated_at": {
-+          "name": "updated_at",
-+          "type": "timestamp",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": "now()"
-+        }
-+      },
-+      "indexes": {},
-+      "foreignKeys": {
-+        "posts_author_id_users_id_fk": {
-+          "name": "posts_author_id_users_id_fk",
-+          "tableFrom": "posts",
-+          "tableTo": "users",
-+          "columnsFrom": [
-+            "author_id"
-+          ],
-+          "columnsTo": [
-+            "id"
-+          ],
-+          "onDelete": "cascade",
-+          "onUpdate": "no action"
-+        }
-+      },
-+      "compositePrimaryKeys": {},
-+      "uniqueConstraints": {},
-+      "policies": {},
-+      "checkConstraints": {},
-+      "isRLSEnabled": false
-+    },
-+    "public.users": {
-+      "name": "users",
-+      "schema": "",
-+      "columns": {
-+        "id": {
-+          "name": "id",
-+          "type": "uuid",
-+          "primaryKey": true,
-+          "notNull": true,
-+          "default": "gen_random_uuid()"
-+        },
-+        "username": {
-+          "name": "username",
-+          "type": "text",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "password_hash": {
-+          "name": "password_hash",
-+          "type": "text",
-+          "primaryKey": false,
-+          "notNull": true
-+        },
-+        "avatar": {
-+          "name": "avatar",
-+          "type": "text",
-+          "primaryKey": false,
-+          "notNull": false,
-+          "default": "'default_avatar'"
-+        },
-+        "wasted_calories": {
-+          "name": "wasted_calories",
-+          "type": "integer",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": 0
-+        },
-+        "logic_violations": {
-+          "name": "logic_violations",
-+          "type": "integer",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": 0
-+        },
-+        "mercy_failures": {
-+          "name": "mercy_failures",
-+          "type": "integer",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": 0
-+        },
-+        "is_mercy_active": {
-+          "name": "is_mercy_active",
-+          "type": "boolean",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": false
-+        },
-+        "created_at": {
-+          "name": "created_at",
-+          "type": "timestamp",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": "now()"
-+        },
-+        "updated_at": {
-+          "name": "updated_at",
-+          "type": "timestamp",
-+          "primaryKey": false,
-+          "notNull": true,
-+          "default": "now()"
-+        }
-+      },
-+      "indexes": {},
-+      "foreignKeys": {},
-+      "compositePrimaryKeys": {},
-+      "uniqueConstraints": {
-+        "users_username_unique": {
-+          "name": "users_username_unique",
-+          "nullsNotDistinct": false,
-+          "columns": [
-+            "username"
-+          ]
-+        }
-+      },
-+      "policies": {},
-+      "checkConstraints": {},
-+      "isRLSEnabled": false
-+    }
-+  },
-+  "enums": {},
-+  "schemas": {},
-+  "sequences": {},
-+  "roles": {},
-+  "policies": {},
-+  "views": {},
-+  "_meta": {
-+    "columns": {},
-+    "schemas": {},
-+    "tables": {}
-+  }
-+}
-\ No newline at end of file
-diff --git a/apps/backend/drizzle/meta/_journal.json b/apps/backend/drizzle/meta/_journal.json
-index 47cb0d7..543b222 100644
---- a/apps/backend/drizzle/meta/_journal.json
-+++ b/apps/backend/drizzle/meta/_journal.json
-@@ -15,6 +15,13 @@
-       "when": 1779290076023,
-       "tag": "0001_hard_boomerang",
-       "breakpoints": true
-+    },
-+    {
-+      "idx": 2,
-+      "version": "7",
-+      "when": 1779358042534,
-+      "tag": "0002_typical_sebastian_shaw",
-+      "breakpoints": true
+ generated: 2026-05-18T09:50:34Z
+-last_updated: 2026-05-21T22:10:00+07:00
++last_updated: 2026-05-21T23:41:43+07:00
+ project: Reverse Startup Leaderboard
+ project_key: NOKEY
+ tracking_system: file-system
+@@ -57,7 +57,7 @@ development_status:
+   epic-3: in-progress
+   3-1-the-sabotage-storefront: done
+   3-2-seamless-checkout-integration: done
+-  3-3-real-time-sabotage-broadcast: backlog
++  3-3-real-time-sabotage-broadcast: review
+   epic-3-retrospective: optional
+   epic-4: backlog
+   4-1-anti-logic-reporting-system: backlog
+diff --git a/apps/backend/src/leaderboard/leaderboard.gateway.ts b/apps/backend/src/leaderboard/leaderboard.gateway.ts
+index 47622cd..1fb0731 100644
+--- a/apps/backend/src/leaderboard/leaderboard.gateway.ts
++++ b/apps/backend/src/leaderboard/leaderboard.gateway.ts
+@@ -45,4 +45,9 @@ export class LeaderboardGateway implements OnGatewayConnection, OnGatewayDisconn
+       this.logger.error(`Error broadcasting leaderboard: ${err.message}`, err.stack);
      }
-   ]
+   }
++
++  emitSabotage(targetId: string, effectType: string, authorId: string) {
++    if (!this.server) return;
++    this.server.emit('sabotage.deployed', { targetId, effectType, authorId });
++  }
  }
-\ No newline at end of file
-diff --git a/apps/backend/src/auth/auth.controller.ts b/apps/backend/src/auth/auth.controller.ts
-index 59779d0..e2eaf14 100644
---- a/apps/backend/src/auth/auth.controller.ts
-+++ b/apps/backend/src/auth/auth.controller.ts
-@@ -4,7 +4,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
- 
- @Controller('auth')
- export class AuthController {
--  constructor(private readonly authService: AuthService) {}
-+  constructor(private readonly authService: AuthService) { }
- 
-   @Post('register')
-   async register(@Body() body: { username?: string; password?: string }) {
-@@ -27,4 +27,14 @@ export class AuthController {
-   async updateProfile(@Request() req: any, @Body() body: { username?: string; avatar?: string }) {
-     return this.authService.updateProfile(req.user.sub, body.username ?? '', body.avatar ?? '');
+diff --git a/apps/backend/src/sabotage/sabotage.controller.ts b/apps/backend/src/sabotage/sabotage.controller.ts
+index 3121244..2fb8ba7 100644
+--- a/apps/backend/src/sabotage/sabotage.controller.ts
++++ b/apps/backend/src/sabotage/sabotage.controller.ts
+@@ -45,4 +45,15 @@ export class SabotageController {
+     const userId = req.user.sub;
+     return this.sabotageService.getUserInventory(userId);
    }
 +
 +  @UseGuards(JwtAuthGuard)
-+  @Put('mercy')
-+  async updateMercy(@Request() req: any, @Body() body: { failures?: number; isMercyActive?: boolean }) {
-+    return this.authService.updateMercy(
-+      req.user.sub,
-+      body.failures ?? 0,
-+      body.isMercyActive ?? false
-+    );
-+  }
- }
-diff --git a/apps/backend/src/auth/auth.service.ts b/apps/backend/src/auth/auth.service.ts
-index c5f587a..f92833b 100644
---- a/apps/backend/src/auth/auth.service.ts
-+++ b/apps/backend/src/auth/auth.service.ts
-@@ -11,7 +11,7 @@ export class AuthService {
-   constructor(
-     @Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>,
-     private readonly jwtService: JwtService,
--  ) {}
-+  ) { }
- 
-   async register(username: string, passwordHashRaw: string) {
-     if (!username || !passwordHashRaw) {
-@@ -159,4 +159,24 @@ export class AuthService {
-       throw err;
-     }
-   }
-+
-+  async updateMercy(userId: string, mercyFailures: number, isMercyActive: boolean) {
-+    try {
-+      const [updatedUser] = await this.db.update(schema.users)
-+        .set({ mercyFailures, isMercyActive, updatedAt: new Date() })
-+        .where(eq(schema.users.id, userId))
-+        .returning();
-+
-+      const { passwordHash: _, ...profile } = updatedUser;
-+      return {
-+        success: true,
-+        data: profile
-+      };
-+    } catch (err: any) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: err.message || 'Failed to update mercy state.' }
-+      });
-+    }
-+  }
- }
-diff --git a/apps/backend/src/leaderboard/leaderboard.service.ts b/apps/backend/src/leaderboard/leaderboard.service.ts
-index f5e3432..f86de51 100644
---- a/apps/backend/src/leaderboard/leaderboard.service.ts
-+++ b/apps/backend/src/leaderboard/leaderboard.service.ts
-@@ -16,6 +16,7 @@ export interface LeaderboardPost {
-     id: string;
-     username: string;
-     avatar: string;
-+    isMercyActive: boolean;
-   };
- }
- 
-@@ -96,12 +97,14 @@ export class LeaderboardService {
-         id: schema.posts.id,
-         title: schema.posts.title,
-         content: schema.posts.content,
-+        wastedCalories: schema.posts.wastedCalories,
-         createdAt: schema.posts.createdAt,
-         updatedAt: schema.posts.updatedAt,
-         author: {
-           id: schema.users.id,
-           username: schema.users.username,
-           avatar: schema.users.avatar,
-+          isMercyActive: schema.users.isMercyActive,
-         },
-       })
-       .from(schema.posts)
-@@ -122,6 +125,7 @@ export class LeaderboardService {
-             id: schema.users.id,
-             username: schema.users.username,
-             avatar: schema.users.avatar,
-+            isMercyActive: schema.users.isMercyActive,
-           },
-         })
-         .from(schema.comments)
-@@ -156,7 +160,7 @@ export class LeaderboardService {
- 
-       return {
-         ...post,
--        wastedCalories: this.calculateScore(post.content),
-+        wastedCalories: post.wastedCalories,
-         comments: commentsForPost,
-       };
-     });
-diff --git a/apps/backend/src/posts/posts.controller.ts b/apps/backend/src/posts/posts.controller.ts
-index 57f5ca9..3e22f16 100644
---- a/apps/backend/src/posts/posts.controller.ts
-+++ b/apps/backend/src/posts/posts.controller.ts
-@@ -33,4 +33,25 @@ export class PostsController {
-     }
-     return this.postsService.createComment(req.user.sub, postId, body.content);
-   }
-+
-+  @UseGuards(JwtAuthGuard)
-+  @Post('vote')
-+  async vote(
-+    @Request() req: any,
-+    @Body() body: { targetId?: string; targetType?: 'post' | 'comment' },
++  @Post('deploy')
++  async deploySabotage(
++    @Req() req: any,
++    @Body('postId') postId: string,
++    @Body('effectType') effectType: string,
 +  ) {
-+    if (!body.targetId || !body.targetType) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: 'targetId and targetType are required.' },
-+      });
-+    }
-+    if (body.targetType !== 'post' && body.targetType !== 'comment') {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: 'targetType must be post or comment.' },
-+      });
-+    }
-+    return this.postsService.vote(req.user.sub, body.targetId, body.targetType);
++    const userId = req.user.sub;
++    return this.sabotageService.deploySabotage(userId, postId, effectType);
 +  }
  }
-diff --git a/apps/backend/src/posts/posts.service.ts b/apps/backend/src/posts/posts.service.ts
-index d73d778..7626b1c 100644
---- a/apps/backend/src/posts/posts.service.ts
-+++ b/apps/backend/src/posts/posts.service.ts
-@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException, BadRequestException } from '@nes
+diff --git a/apps/backend/src/sabotage/sabotage.module.ts b/apps/backend/src/sabotage/sabotage.module.ts
+index 6e8e9ef..9a5b9b3 100644
+--- a/apps/backend/src/sabotage/sabotage.module.ts
++++ b/apps/backend/src/sabotage/sabotage.module.ts
+@@ -1,11 +1,12 @@
+-import { Module } from '@nestjs/common';
++import { Module, forwardRef } from '@nestjs/common';
+ import { DatabaseModule } from '../database/database.module';
+ import { SabotageController } from './sabotage.controller';
+ import { SabotageService } from './sabotage.service';
+ import { StripeService } from './stripe.service';
++import { LeaderboardModule } from '../leaderboard/leaderboard.module';
+ 
+ @Module({
+-  imports: [DatabaseModule],
++  imports: [DatabaseModule, forwardRef(() => LeaderboardModule)],
+   controllers: [SabotageController],
+   providers: [SabotageService, StripeService],
+   exports: [SabotageService, StripeService],
+diff --git a/apps/backend/src/sabotage/sabotage.service.ts b/apps/backend/src/sabotage/sabotage.service.ts
+index 086e0c6..f824639 100644
+--- a/apps/backend/src/sabotage/sabotage.service.ts
++++ b/apps/backend/src/sabotage/sabotage.service.ts
+@@ -1,9 +1,10 @@
+-import { Injectable, Inject, NotFoundException, Logger } from '@nestjs/common';
++import { Injectable, Inject, NotFoundException, Logger, BadRequestException, forwardRef } from '@nestjs/common';
  import { DRIZZLE } from '../database/database.module';
  import { NodePgDatabase } from 'drizzle-orm/node-postgres';
  import * as schema from '../../db/schema';
--import { eq } from 'drizzle-orm';
-+import { eq, sql } from 'drizzle-orm';
- import { LeaderboardService, calculateScoreHelper } from '../leaderboard/leaderboard.service';
+ import { eq, and } from 'drizzle-orm';
+ import { StripeService } from './stripe.service';
++import { LeaderboardGateway } from '../leaderboard/leaderboard.gateway';
  
  @Injectable()
-@@ -126,4 +126,88 @@ export class PostsService {
-       data: newComment,
+ export class SabotageService {
+@@ -12,6 +13,8 @@ export class SabotageService {
+   constructor(
+     @Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>,
+     private readonly stripeService: StripeService,
++    @Inject(forwardRef(() => LeaderboardGateway))
++    private readonly leaderboardGateway: LeaderboardGateway,
+   ) {}
+ 
+   async getAvailablePacks() {
+@@ -184,4 +187,91 @@ export class SabotageService {
+       })),
      };
    }
 +
-+  async vote(userId: string, targetId: string, targetType: 'post' | 'comment') {
-+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-+    if (!uuidRegex.test(targetId)) {
++  async deploySabotage(userId: string, postId: string, effectType: string) {
++    // 1. Retrieve the user's inventory count for effectType
++    const userInventory = await this.db
++      .select()
++      .from(schema.userSabotages)
++      .where(
++        and(
++          eq(schema.userSabotages.userId, userId),
++          eq(schema.userSabotages.effectType, effectType),
++        ),
++      )
++      .limit(1);
++
++    if (userInventory.length === 0 || userInventory[0].count <= 0) {
 +      throw new BadRequestException({
 +        success: false,
-+        error: { message: 'Invalid targetId format. Must be a valid UUID.' },
++        error: { message: 'Nice try, but your arsenal is empty. Visit the store to buy some power first!' },
 +      });
 +    }
 +
-+    if (targetType === 'post') {
-+      const [post] = await this.db
-+        .select()
-+        .from(schema.posts)
-+        .where(eq(schema.posts.id, targetId));
++    const inventoryRecord = userInventory[0];
 +
-+      if (!post) {
-+        throw new NotFoundException({
-+          success: false,
-+          error: { message: 'Post not found.' },
-+        });
-+      }
++    // 2. Retrieve the target post
++    const postRes = await this.db
++      .select()
++      .from(schema.posts)
++      .where(eq(schema.posts.id, postId))
++      .limit(1);
 +
-+      if (post.authorId === userId) {
-+        throw new BadRequestException({
-+          success: false,
-+          error: { message: 'You cannot vote on your own post.' },
-+        });
-+      }
-+
-+      const [updatedPost] = await this.db
-+        .update(schema.posts)
-+        .set({ wastedCalories: sql`${schema.posts.wastedCalories} + 50` })
-+        .where(eq(schema.posts.id, targetId))
-+        .returning();
-+
-+      try {
-+        await this.leaderboardService.broadcastUpdate();
-+      } catch (e) {
-+        console.error('Failed to broadcast leaderboard update after post vote:', e);
-+      }
-+
-+      return {
-+        success: true,
-+        data: updatedPost,
-+      };
-+    } else {
-+      const [comment] = await this.db
-+        .select()
-+        .from(schema.comments)
-+        .where(eq(schema.comments.id, targetId));
-+
-+      if (!comment) {
-+        throw new NotFoundException({
-+          success: false,
-+          error: { message: 'Comment not found.' },
-+        });
-+      }
-+
-+      if (comment.authorId === userId) {
-+        throw new BadRequestException({
-+          success: false,
-+          error: { message: 'You cannot vote on your own comment.' },
-+        });
-+      }
-+
-+      const [updatedComment] = await this.db
-+        .update(schema.comments)
-+        .set({ wastedCalories: sql`${schema.comments.wastedCalories} + 50` })
-+        .where(eq(schema.comments.id, targetId))
-+        .returning();
-+
-+      try {
-+        await this.leaderboardService.broadcastUpdate();
-+      } catch (e) {
-+        console.error('Failed to broadcast leaderboard update after comment vote:', e);
-+      }
-+
-+      return {
-+        success: true,
-+        data: updatedComment,
-+      };
++    if (postRes.length === 0) {
++      throw new NotFoundException({
++        success: false,
++        error: { message: 'Post not found.' },
++      });
 +    }
-+  }
- }
-diff --git a/apps/frontend/src/app/actions/auth.ts b/apps/frontend/src/app/actions/auth.ts
-index 7f91d28..d7c960b 100644
---- a/apps/frontend/src/app/actions/auth.ts
-+++ b/apps/frontend/src/app/actions/auth.ts
-@@ -8,6 +8,8 @@ export interface UserProfile {
-   avatar: string;
-   wastedCalories: number;
-   logicViolations: number;
-+  mercyFailures: number;
-+  isMercyActive: boolean;
-   createdAt: string;
-   updatedAt: string;
- }
-@@ -190,3 +192,45 @@ export async function actionGetMe(): Promise<ActionResponse<UserProfile>> {
-     };
-   }
- }
 +
-+export async function actionSyncMercyState(
-+  failures: number,
-+  isMercyActive: boolean
-+): Promise<ActionResponse<UserProfile>> {
-+  const cookieStore = await cookies();
-+  const tokenObj = cookieStore.get('token');
-+  const token = tokenObj?.value;
++    const post = postRes[0];
 +
-+  if (!token) {
-+    return {
-+      success: false,
-+      error: { message: 'Unauthorized. Log in first, please.' },
-+    };
-+  }
++    // 3. Calculate score deduction
++    let deduction = 0;
++    if (effectType === 'blur') {
++      deduction = 100;
++    } else if (effectType === 'comic_sans') {
++      deduction = 150;
++    } else if (effectType === 'papyrus') {
++      deduction = 150;
++    } else if (effectType === 'deduct_calories') {
++      deduction = 500;
++    }
 +
-+  try {
-+    const res = await fetch(`${BACKEND_URL}/auth/mercy`, {
-+      method: 'PUT',
-+      headers: {
-+        'Content-Type': 'application/json',
-+        Authorization: `Bearer ${token}`,
-+      },
-+      body: JSON.stringify({ failures, isMercyActive }),
++    const newWastedCalories = Math.max(0, post.wastedCalories - deduction);
++
++    // 4. Update the database in a transaction
++    await this.db.transaction(async (tx) => {
++      // Decrement count
++      await tx
++        .update(schema.userSabotages)
++        .set({
++          count: inventoryRecord.count - 1,
++          updatedAt: new Date(),
++        })
++        .where(eq(schema.userSabotages.id, inventoryRecord.id));
++
++      // Update post's wasted calories
++      await tx
++        .update(schema.posts)
++        .set({
++          wastedCalories: newWastedCalories,
++          updatedAt: new Date(),
++        })
++        .where(eq(schema.posts.id, post.id));
 +    });
 +
-+    const data = await res.json();
-+    if (!res.ok) {
-+      return {
-+        success: false,
-+        error: { message: data.error?.message || 'Failed to sync mercy state.' },
-+      };
-+    }
++    // 5. Broadcast updated leaderboard
++    await this.leaderboardGateway.broadcastLeaderboard();
 +
-+    return { success: true, data: data.data };
-+  } catch (err) {
++    // 6. Broadcast custom event sabotage.deployed
++    this.leaderboardGateway.emitSabotage(post.id, effectType, post.authorId);
++
 +    return {
-+      success: false,
-+      error: { message: 'Failed to sync mercy state. Backend was uncooperative.' },
++      success: true,
++      data: {
++        newWastedCalories,
++      },
 +    };
 +  }
-+}
-diff --git a/apps/frontend/src/app/actions/leaderboard.ts b/apps/frontend/src/app/actions/leaderboard.ts
-index 0c1da4f..aa5aedc 100644
---- a/apps/frontend/src/app/actions/leaderboard.ts
-+++ b/apps/frontend/src/app/actions/leaderboard.ts
-@@ -11,6 +11,7 @@ export interface LeaderboardPost {
-     id: string;
-     username: string;
-     avatar: string;
-+    isMercyActive: boolean;
-   };
-   comments?: Array<{
-     id: string;
-@@ -23,6 +24,7 @@ export interface LeaderboardPost {
-       id: string;
-       username: string;
-       avatar: string;
-+      isMercyActive: boolean;
-     };
-   }>;
  }
-diff --git a/apps/frontend/src/app/actions/posts.ts b/apps/frontend/src/app/actions/posts.ts
-index 5de9da7..525f5cf 100644
---- a/apps/frontend/src/app/actions/posts.ts
-+++ b/apps/frontend/src/app/actions/posts.ts
-@@ -88,3 +88,45 @@ export async function actionCreateComment(
+diff --git a/apps/frontend/src/app/actions/sabotage.ts b/apps/frontend/src/app/actions/sabotage.ts
+index 9e6642d..3be7f42 100644
+--- a/apps/frontend/src/app/actions/sabotage.ts
++++ b/apps/frontend/src/app/actions/sabotage.ts
+@@ -139,3 +139,45 @@ export async function actionGetUserInventory(): Promise<ActionResponse<UserInven
      };
    }
  }
 +
-+export async function actionSubmitVote(
-+  targetId: string,
-+  targetType: 'post' | 'comment'
-+): Promise<ActionResponse<any>> {
++export async function actionDeploySabotage(
++  postId: string,
++  effectType: string
++): Promise<ActionResponse<{ newWastedCalories: number }>> {
 +  const cookieStore = await cookies();
 +  const tokenObj = cookieStore.get('token');
 +  const token = tokenObj?.value;
@@ -828,25 +382,25 @@ index 5de9da7..525f5cf 100644
 +  if (!token) {
 +    return {
 +      success: false,
-+      error: { message: 'You must be authenticated to cast a vote. Log in first!' },
++      error: { message: 'You must be authenticated to deploy sabotage.' },
 +    };
 +  }
 +
 +  try {
-+    const res = await fetch(`${BACKEND_URL}/posts/vote`, {
++    const res = await fetch(`${BACKEND_URL}/sabotage/deploy`, {
 +      method: 'POST',
 +      headers: {
 +        'Content-Type': 'application/json',
 +        Authorization: `Bearer ${token}`,
 +      },
-+      body: JSON.stringify({ targetId, targetType }),
++      body: JSON.stringify({ postId, effectType }),
 +    });
 +
 +    const data = await res.json();
 +    if (!res.ok) {
 +      return {
 +        success: false,
-+        error: { message: data.error?.message || 'Failed to submit vote.' },
++        error: { message: data.error?.message || data.message || 'Failed to deploy sabotage.' },
 +      };
 +    }
 +
@@ -854,2129 +408,1097 @@ index 5de9da7..525f5cf 100644
 +  } catch (err) {
 +    return {
 +      success: false,
-+      error: { message: 'Network error occurred while submitting vote.' },
++      error: { message: 'Network error occurred while deploying sabotage.' },
 +    };
 +  }
 +}
 diff --git a/apps/frontend/src/app/globals.css b/apps/frontend/src/app/globals.css
-index 77a5103..96850a9 100644
+index 96850a9..da1063c 100644
 --- a/apps/frontend/src/app/globals.css
 +++ b/apps/frontend/src/app/globals.css
-@@ -28,4 +28,56 @@ h4,
- h5,
- h6 {
-   font-family: var(--font-heading);
+@@ -80,4 +80,26 @@ h6 {
+   body.screen-shake {
+     animation: global-screen-shake 0.5s ease-in-out;
+   }
 +}
 +
-+@keyframes global-screen-shake {
-+  0% {
-+    transform: translate(0, 0) rotate(0deg);
-+  }
-+
-+  10% {
-+    transform: translate(-4px, 4px) rotate(-0.5deg);
-+  }
-+
-+  20% {
-+    transform: translate(4px, -4px) rotate(0.5deg);
-+  }
-+
-+  30% {
-+    transform: translate(-4px, -4px) rotate(-0.5deg);
-+  }
-+
-+  40% {
-+    transform: translate(4px, 4px) rotate(0.5deg);
-+  }
-+
-+  50% {
-+    transform: translate(-4px, 4px) rotate(-0.5deg);
-+  }
-+
-+  60% {
-+    transform: translate(4px, -4px) rotate(0.5deg);
-+  }
-+
-+  70% {
-+    transform: translate(-4px, -4px) rotate(-0.5deg);
-+  }
-+
-+  80% {
-+    transform: translate(4px, 4px) rotate(0.5deg);
-+  }
-+
-+  90% {
-+    transform: translate(-4px, 4px) rotate(-0.5deg);
-+  }
-+
-+  100% {
-+    transform: translate(0, 0) rotate(0deg);
-+  }
++/* Sabotage Body-level Distortions */
++body.sabotage-blur {
++  filter: blur(2px);
++}
++body.sabotage-comic-sans * {
++  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
++}
++body.sabotage-papyrus * {
++  font-family: 'Papyrus', fantasy !important;
 +}
 +
-+@media (prefers-reduced-motion: no-preference) {
-+  body.screen-shake {
-+    animation: global-screen-shake 0.5s ease-in-out;
-+  }
++/* Sabotage Row-level Distortions */
++.post-blur {
++  filter: blur(4px);
++}
++.post-comic-sans * {
++  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
++}
++.post-papyrus * {
++  font-family: 'Papyrus', fantasy !important;
  }
 \ No newline at end of file
-diff --git a/apps/frontend/src/app/page.tsx b/apps/frontend/src/app/page.tsx
-index c11bb72..c0fd80a 100644
---- a/apps/frontend/src/app/page.tsx
-+++ b/apps/frontend/src/app/page.tsx
-@@ -4,7 +4,9 @@ import React, { useEffect, useState, useTransition } from 'react';
- import Link from 'next/link';
- import LeaderboardGrid from '../domains/leaderboard/components/LeaderboardGrid';
- import CreatePostModal from '../domains/leaderboard/components/CreatePostModal';
-+import MercyActivationModal from '../domains/anti-ux/components/MercyActivationModal';
- import { useAuthStore } from '../core/store/useAuthStore';
-+import { useMercyStore } from '../core/store/useMercyStore';
- import { actionGetMe } from './actions/auth';
- import styles from './page.module.css';
+diff --git a/apps/frontend/src/app/layout.tsx b/apps/frontend/src/app/layout.tsx
+index c1aa3d9..f4ca976 100644
+--- a/apps/frontend/src/app/layout.tsx
++++ b/apps/frontend/src/app/layout.tsx
+@@ -1,5 +1,6 @@
+ import type { Metadata } from 'next';
+ import { Inter, Outfit } from 'next/font/google';
++import ChaosListener from '@/domains/sabotage/components/ChaosListener';
+ import './globals.css';
  
-@@ -13,6 +15,7 @@ export default function HomePage() {
-   const setUser = useAuthStore((state) => state.setUser);
-   const [, startTransition] = useTransition();
-   const [isModalOpen, setIsModalOpen] = useState(false);
-+  const mercyActive = useMercyStore((state) => state.isMercyActive);
- 
-   useEffect(() => {
-     // Check session on mount to see if user is authenticated
-@@ -20,6 +23,10 @@ export default function HomePage() {
-       const response = await actionGetMe();
-       if (response.success && response.data) {
-         setUser(response.data);
-+        useMercyStore.getState().setMercyState(
-+          response.data.mercyFailures ?? 0,
-+          response.data.isMercyActive ?? false
-+        );
-       } else {
-         setUser(null);
-       }
-@@ -35,8 +42,8 @@ export default function HomePage() {
-         </Link>
-         <nav className={styles.navArea}>
-           {user ? (
--            <Link href="/profile" className={`${styles.navButton} ${styles.secondaryBtn}`}>
--              👤 {user.username}
-+            <Link href="/profile" className={`${styles.navButton} ${styles.secondaryBtn}`} id="nav-profile-btn">
-+              👤 {user.username} {mercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>}
-             </Link>
-           ) : (
-             <Link href="/auth" className={`${styles.navButton} ${styles.primaryBtn}`}>
-@@ -90,6 +97,7 @@ export default function HomePage() {
-       </footer>
- 
-       <CreatePostModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-+      <MercyActivationModal />
-     </div>
-   );
- }
-diff --git a/apps/frontend/src/app/profile/page.tsx b/apps/frontend/src/app/profile/page.tsx
-index d2fe63f..862c118 100644
---- a/apps/frontend/src/app/profile/page.tsx
-+++ b/apps/frontend/src/app/profile/page.tsx
-@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
- import styles from './profile.module.css';
- import { actionGetMe, actionUpdateProfile, actionLogout } from '../actions/auth';
- import { useAuthStore } from '../../core/store/useAuthStore';
-+import { useMercyStore } from '../../core/store/useMercyStore';
-+import MercyActivationModal from '../../domains/anti-ux/components/MercyActivationModal';
- 
- const AVATARS = [
-   { id: 'avatar_clown', emoji: '🤡', label: 'Clown' },
-@@ -29,6 +31,10 @@ export default function ProfilePage() {
-   const setUser = useAuthStore((state) => state.setUser);
-   const logoutStore = useAuthStore((state) => state.logout);
- 
-+  const failures = useMercyStore((state) => state.failures);
-+  const mercyActive = useMercyStore((state) => state.isMercyActive);
-+  const setMercyActive = useMercyStore((state) => state.setMercyActive);
-+
-   const [username, setUsername] = useState('');
-   const [avatar, setAvatar] = useState('default_avatar');
-   const [success, setSuccess] = useState<string | null>(null);
-@@ -43,6 +49,10 @@ export default function ProfilePage() {
-           setUser(response.data);
-           setUsername(response.data.username);
-           setAvatar(response.data.avatar || 'default_avatar');
-+          useMercyStore.getState().setMercyState(
-+            response.data.mercyFailures ?? 0,
-+            response.data.isMercyActive ?? false
-+          );
-         } else {
-           router.push('/auth');
-         }
-@@ -50,6 +60,10 @@ export default function ProfilePage() {
-     } else {
-       setUsername(user.username);
-       setAvatar(user.avatar || 'default_avatar');
-+      useMercyStore.getState().setMercyState(
-+        user.mercyFailures ?? 0,
-+        user.isMercyActive ?? false
-+      );
-     }
-   }, [user, setUser, router]);
- 
-@@ -103,7 +117,9 @@ export default function ProfilePage() {
-           <div className={styles.avatarDisplay}>
-             {AVATAR_MAP[avatar] || '👤'}
-           </div>
--          <h1 className={styles.title}>{user.username}</h1>
-+          <h1 className={styles.title}>
-+            {user.username} {mercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '6px' }}>👶</span>}
-+          </h1>
-         </div>
- 
-         <div className={styles.statsGrid}>
-@@ -155,6 +171,29 @@ export default function ProfilePage() {
-             </div>
-           </div>
- 
-+          {failures >= 10 && (
-+            <div className={styles.mercySection}>
-+              <h3 className={styles.mercyTitle}>Toddler Settings</h3>
-+              <div className={styles.toggleRow}>
-+                <label htmlFor="mercy-mode-toggle" className={styles.toggleLabel}>
-+                  👶 Mercy Mode (Toddler Mode)
-+                </label>
-+                <input
-+                  id="mercy-mode-toggle"
-+                  type="checkbox"
-+                  checked={mercyActive}
-+                  onChange={async (e) => {
-+                    await setMercyActive(e.target.checked);
-+                  }}
-+                  className={styles.toggleInput}
-+                />
-+              </div>
-+              <p className={styles.toggleHint}>
-+                Disables evasive UI elements and sponsored CAPTCHAs so you can navigate without crying.
-+              </p>
-+            </div>
-+          )}
-+
-           <div className={styles.actions}>
-             <button
-               type="submit"
-@@ -174,6 +213,7 @@ export default function ProfilePage() {
-           </div>
-         </form>
-       </div>
-+      <MercyActivationModal />
-     </div>
-   );
- }
-diff --git a/apps/frontend/src/app/profile/profile.module.css b/apps/frontend/src/app/profile/profile.module.css
-index 990b263..8d2ca46 100644
---- a/apps/frontend/src/app/profile/profile.module.css
-+++ b/apps/frontend/src/app/profile/profile.module.css
-@@ -252,3 +252,53 @@
-   text-align: left;
-   line-height: 1.4;
- }
-+
-+.mercySection {
-+  border-top: 1px dashed rgba(255, 255, 255, 0.15);
-+  margin-top: 1.5rem;
-+  padding-top: 1.5rem;
-+  display: flex;
-+  flex-direction: column;
-+  gap: 0.75rem;
-+}
-+
-+.mercyTitle {
-+  font-family: "Outfit", sans-serif;
-+  font-size: 1rem;
-+  font-weight: 700;
-+  color: #db2777;
-+  margin: 0;
-+  text-transform: uppercase;
-+  letter-spacing: 0.05em;
-+}
-+
-+.toggleRow {
-+  display: flex;
-+  justify-content: space-between;
-+  align-items: center;
-+  background: rgba(219, 39, 119, 0.05);
-+  border: 1px solid rgba(219, 39, 119, 0.2);
-+  border-radius: 12px;
-+  padding: 0.85rem 1rem;
-+}
-+
-+.toggleLabel {
-+  font-size: 0.95rem;
-+  font-weight: 600;
-+  color: #f1f5f9;
-+  cursor: pointer;
-+}
-+
-+.toggleInput {
-+  width: 1.75rem;
-+  height: 1.75rem;
-+  cursor: pointer;
-+  accent-color: #db2777;
-+}
-+
-+.toggleHint {
-+  font-size: 0.8rem;
-+  color: #94a3b8;
-+  margin: 0;
-+  line-height: 1.4;
-+}
-\ No newline at end of file
-diff --git a/apps/frontend/src/core/store/useMercyStore.ts b/apps/frontend/src/core/store/useMercyStore.ts
+ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+@@ -18,6 +19,7 @@ export default function RootLayout({
+   return (
+     <html lang="en">
+       <body className={`${inter.variable} ${outfit.variable}`}>
++        <ChaosListener />
+         {children}
+       </body>
+     </html>
+diff --git a/apps/frontend/src/core/store/useChaosStore.ts b/apps/frontend/src/core/store/useChaosStore.ts
 new file mode 100644
-index 0000000..27c8252
+index 0000000..4425533
 --- /dev/null
-+++ b/apps/frontend/src/core/store/useMercyStore.ts
-@@ -0,0 +1,73 @@
++++ b/apps/frontend/src/core/store/useChaosStore.ts
+@@ -0,0 +1,35 @@
 +import { create } from 'zustand';
-+import { actionSyncMercyState } from '../../app/actions/auth';
-+import { useAuthStore } from './useAuthStore';
 +
-+interface MercyState {
-+  failures: number;
-+  isMercyActive: boolean;
-+  showActivationModal: boolean;
-+  setMercyState: (failures: number, isMercyActive: boolean) => void;
-+  incrementFailures: () => Promise<void>;
-+  resetFailures: () => Promise<void>;
-+  triggerMercy: () => Promise<void>;
-+  setMercyActive: (isActive: boolean) => Promise<void>;
-+  dismissActivationModal: () => void;
++export interface ActiveSabotage {
++  id: string;
++  targetId: string;
++  effectType: string;
++  authorId: string;
++  expiresAt: number;
 +}
 +
-+export const useMercyStore = create<MercyState>((set, get) => ({
-+  failures: 0,
-+  isMercyActive: false,
-+  showActivationModal: false,
-+  setMercyState: (failures: number, isMercyActive: boolean) => {
-+    set({ failures, isMercyActive });
-+  },
-+  incrementFailures: async () => {
-+    const state = get();
-+    const nextFailures = state.failures + 1;
-+    const shouldActivate = nextFailures >= 10 && !state.isMercyActive;
-+    const nextMercyActive = state.isMercyActive || shouldActivate;
++interface ChaosState {
++  activeSabotages: ActiveSabotage[];
++  addSabotage: (sabotage: ActiveSabotage) => void;
++  removeSabotage: (id: string) => void;
++  clearExpired: () => void;
++}
 +
-+    set({
-+      failures: nextFailures,
-+      isMercyActive: nextMercyActive,
-+      showActivationModal: shouldActivate ? true : state.showActivationModal,
-+    });
-+    const res = await actionSyncMercyState(nextFailures, nextMercyActive);
-+    if (res.success && res.data) {
-+      useAuthStore.getState().setUser(res.data);
-+    }
-+  },
-+  resetFailures: async () => {
-+    set({ failures: 0 });
-+    const res = await actionSyncMercyState(0, get().isMercyActive);
-+    if (res.success && res.data) {
-+      useAuthStore.getState().setUser(res.data);
-+    }
-+  },
-+  triggerMercy: async () => {
-+    const wasActive = get().isMercyActive;
-+    set({
-+      isMercyActive: true,
-+      showActivationModal: !wasActive ? true : get().showActivationModal,
-+    });
-+    const res = await actionSyncMercyState(get().failures, true);
-+    if (res.success && res.data) {
-+      useAuthStore.getState().setUser(res.data);
-+    }
-+  },
-+  setMercyActive: async (isActive: boolean) => {
-+    const wasActive = get().isMercyActive;
-+    set({
-+      isMercyActive: isActive,
-+      showActivationModal: (isActive && !wasActive) ? true : get().showActivationModal,
-+    });
-+    const res = await actionSyncMercyState(get().failures, isActive);
-+    if (res.success && res.data) {
-+      useAuthStore.getState().setUser(res.data);
-+    }
-+  },
-+  dismissActivationModal: () => {
-+    set({ showActivationModal: false });
-+  },
++export const useChaosStore = create<ChaosState>((set) => ({
++  activeSabotages: [],
++  addSabotage: (sabotage) =>
++    set((state) => ({
++      activeSabotages: [...state.activeSabotages.filter((s) => s.id !== sabotage.id), sabotage],
++    })),
++  removeSabotage: (id) =>
++    set((state) => ({
++      activeSabotages: state.activeSabotages.filter((s) => s.id !== id),
++    })),
++  clearExpired: () =>
++    set((state) => {
++      const now = Date.now();
++      return {
++        activeSabotages: state.activeSabotages.filter((s) => s.expiresAt > now),
++      };
++    }),
 +}));
-+
-diff --git a/apps/frontend/src/domains/anti-ux/components/EvasiveButton.module.css b/apps/frontend/src/domains/anti-ux/components/EvasiveButton.module.css
-new file mode 100644
-index 0000000..7d21623
---- /dev/null
-+++ b/apps/frontend/src/domains/anti-ux/components/EvasiveButton.module.css
-@@ -0,0 +1,147 @@
-+.container {
-+  position: relative;
-+  display: inline-block;
-+  margin: 4px;
+diff --git a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css
+index 9019beb..624ca86 100644
+--- a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css
++++ b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css
+@@ -200,6 +200,51 @@
+   display: flex;
+ }
+ 
++.actionButtons {
++  display: flex;
++  gap: 0.5rem;
++  align-items: center;
 +}
 +
-+.button {
-+  display: inline-flex;
-+  align-items: center;
-+  gap: 6px;
-+  padding: 6px 12px;
++.sabotageBtn {
++  background: #dc2626;
++  color: #ffffff;
++  border: 1px solid #b91c1c;
++  border-radius: 8px;
++  padding: 0.5rem 1rem;
 +  font-family: var(--font-heading);
 +  font-size: 0.85rem;
-+  font-weight: 600;
-+  color: #ffffff;
-+  background: linear-gradient(135deg, #f43f5e, #fb7185);
-+  border: none;
-+  border-radius: 6px;
++  font-weight: 700;
 +  cursor: pointer;
-+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
-+  transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.3s ease;
-+  transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
-+  user-select: none;
++  display: inline-flex;
++  align-items: center;
++  gap: 0.25rem;
++  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
++  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
 +}
 +
-+.button:hover {
-+  box-shadow: 0 6px 16px rgba(244, 63, 94, 0.5);
++.sabotageBtn:hover {
++  background: #b91c1c;
++  transform: translateY(-1px);
++  box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
 +}
 +
-+.button:active {
-+  transform: translate(var(--offset-x, 0px), var(--offset-y, 0px)) scale(0.95);
++.sabotageBtn:active {
++  transform: translateY(0);
 +}
 +
-+/* Vibrating state */
-+.vibrating {
-+  animation: shakeBtn 0.1s infinite;
-+  background: linear-gradient(135deg, #e11d48, #be123c);
-+  box-shadow: 0 0 15px #e11d48;
-+}
-+
-+@keyframes shakeBtn {
-+  0% {
-+    transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
-+  }
-+
-+  25% {
-+    transform: translate(calc(var(--offset-x, 0px) - 2px), calc(var(--offset-y, 0px) + 2px));
-+  }
-+
-+  50% {
-+    transform: translate(calc(var(--offset-x, 0px) + 2px), calc(var(--offset-y, 0px) - 2px));
-+  }
-+
-+  75% {
-+    transform: translate(calc(var(--offset-x, 0px) - 2px), calc(var(--offset-y, 0px) - 2px));
-+  }
-+
-+  100% {
-+    transform: translate(calc(var(--offset-x, 0px) + 2px), calc(var(--offset-y, 0px) + 2px));
-+  }
-+}
-+
-+/* Cooldown/Panting state */
-+.cooldown {
-+  opacity: 0.6;
-+  cursor: not-allowed;
-+  background: #6b7280;
-+  box-shadow: none;
-+  animation: panting 1s infinite alternate ease-in-out;
-+}
-+
-+@keyframes panting {
-+  0% {
-+    transform: translate(0px, 0px) scale(1);
-+  }
-+
-+  100% {
-+    transform: translate(0px, 0px) scale(1.05);
-+    opacity: 0.8;
-+  }
-+}
-+
-+/* Tooltip style */
-+.tooltip {
++.srOnly {
 +  position: absolute;
-+  bottom: 125%;
-+  left: 50%;
-+  transform: translateX(-50%) translateY(var(--offset-y, 0px));
-+  margin-left: var(--offset-x, 0px);
-+  background: #111827;
-+  color: #fb7185;
-+  padding: 6px 12px;
-+  border-radius: 6px;
-+  font-size: 0.75rem;
-+  font-weight: 600;
++  width: 1px;
++  height: 1px;
++  padding: 0;
++  margin: -1px;
++  overflow: hidden;
++  clip: rect(0, 0, 0, 0);
 +  white-space: nowrap;
-+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-+  border: 1px solid #f43f5e;
-+  pointer-events: none;
-+  z-index: 100;
-+  animation: fadeInOut 2s forwards;
++  border: 0;
 +}
 +
-+@keyframes fadeInOut {
-+  0% {
-+    opacity: 0;
-+    transform: translateX(-50%) translateY(5px);
-+  }
+ @media (max-width: 768px) {
+   .headerRow {
+     display: none;
+diff --git a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
+index b0c5af6..547002c 100644
+--- a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
++++ b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
+@@ -7,6 +7,8 @@ import GoldenRaspberryBadge from './GoldenRaspberryBadge';
+ import CommentSection from './CommentSection';
+ import { useAuthStore } from '../../../core/store/useAuthStore';
+ import EvasiveButton from '../../anti-ux/components/EvasiveButton';
++import SabotageSelectionModal from '../../sabotage/components/SabotageSelectionModal';
++import { useChaosStore } from '../../../core/store/useChaosStore';
+ import styles from './LeaderboardGrid.module.css';
+ 
+ const AVATAR_MAP: Record<string, string> = {
+@@ -24,6 +26,13 @@ export default function LeaderboardGrid() {
+   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
+   const [isPending, startTransition] = useTransition();
+   const currentUser = useAuthStore((state) => state.user);
++  const activeSabotages = useChaosStore((state) => state.activeSabotages);
++  const [isModalOpen, setIsModalOpen] = useState(false);
++  const [selectedSabotagePost, setSelectedSabotagePost] = useState<{
++    id: string;
++    title: string;
++    authorId: string;
++  } | null>(null);
+ 
+   useEffect(() => {
+     // 1. Fetch initial leaderboard data
+@@ -93,13 +102,21 @@ export default function LeaderboardGrid() {
+         {posts.map((post, index) => {
+           const isFirst = index === 0;
+           const isExpanded = expandedPostId === post.id;
 +
-+  10% {
-+    opacity: 1;
-+    transform: translateX(-50%) translateY(0);
-+  }
++          // Check if this post is targeted by active sabotages where current user is NOT the author
++          const postSabotages = activeSabotages.filter(
++            (s) => s.targetId === post.id && s.authorId !== currentUser?.id && s.effectType !== 'deduct_calories'
++          );
++          const isDistorted = postSabotages.length > 0;
++          const rowDistortionClasses = postSabotages.map((s) => `post-${s.effectType}`).join(' ');
 +
-+  85% {
-+    opacity: 1;
-+  }
+           return (
+             <div
+               key={post.id}
+               className={`${styles.postRowWrapper} ${isFirst ? styles.firstPlace : ''}`}
+             >
+               <div
+-                className={styles.postRow}
++                className={`${styles.postRow} ${rowDistortionClasses}`}
+                 onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
+                 role="button"
+                 aria-expanded={isExpanded}
+@@ -111,10 +128,17 @@ export default function LeaderboardGrid() {
+                   }
+                 }}
+               >
+-                <div className={styles.colRank}>
++                {/* Screen Reader Bypass - read clean text block if distorted */}
++                {isDistorted && (
++                  <div className={styles.srOnly}>
++                    Rank {index + 1}. Innovator: {post.author.username}. Idea: {post.title} - {post.content}. Wasted calories: {post.wastedCalories} kcal.
++                  </div>
++                )}
 +
-+  100% {
-+    opacity: 0;
-+    transform: translateX(-50%) translateY(-5px);
-+  }
-+}
-+
-+/* Safe-chaos accessibility overrides */
-+@media (prefers-reduced-motion: reduce) {
-+  .button {
-+    transform: none !important;
-+    transition: none !important;
-+  }
-+
-+  .vibrating {
-+    animation: none !important;
-+    box-shadow: none !important;
-+  }
-+
-+  .cooldown {
-+    animation: none !important;
-+  }
-+
-+  .tooltip {
-+    transform: translateX(-50%) !important;
-+    margin-left: 0px !important;
-+    animation: none !important;
-+    opacity: 1 !important;
-+  }
-+}
-\ No newline at end of file
-diff --git a/apps/frontend/src/domains/anti-ux/components/EvasiveButton.tsx b/apps/frontend/src/domains/anti-ux/components/EvasiveButton.tsx
++                <div className={styles.colRank} aria-hidden={isDistorted ? "true" : undefined}>
+                   <span className={styles.rankBadge}>{index + 1}</span>
+                 </div>
+-                <div className={styles.colAuthor}>
++                <div className={styles.colAuthor} aria-hidden={isDistorted ? "true" : undefined}>
+                   <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
+                     {AVATAR_MAP[post.author.avatar] || '👤'}
+                   </span>
+@@ -125,20 +149,42 @@ export default function LeaderboardGrid() {
+                     )}
+                   </span>
+                 </div>
+-                <div className={styles.colTitle}>
++                <div className={styles.colTitle} aria-hidden={isDistorted ? "true" : undefined}>
+                   <div className={styles.postTitleText}>{post.title}</div>
+                   <p className={styles.postSnippet}>{post.content}</p>
+                 </div>
+                 <div className={styles.colScore}>
+                   <div className={styles.scoreContainer}>
+-                    <span className={styles.scoreValue}>{post.wastedCalories} kcal</span>
++                    <span className={styles.scoreValue} aria-hidden={isDistorted ? "true" : undefined}>
++                      {post.wastedCalories} kcal
++                    </span>
+                     {isFirst && (
+-                      <div className={styles.badgeWrapper}>
++                      <div className={styles.badgeWrapper} aria-hidden={isDistorted ? "true" : undefined}>
+                         <GoldenRaspberryBadge />
+                       </div>
+                     )}
+-                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+-                      <EvasiveButton targetId={post.id} targetType="post" />
++                    <div className={styles.actionButtons}>
++                      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
++                        <EvasiveButton targetId={post.id} targetType="post" />
++                      </div>
++                      {currentUser && (
++                        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
++                          <button
++                            className={styles.sabotageBtn}
++                            onClick={() => {
++                              setSelectedSabotagePost({
++                                id: post.id,
++                                title: post.title,
++                                authorId: post.author.id,
++                              });
++                              setIsModalOpen(true);
++                            }}
++                            aria-label={`Sabotage post by ${post.author.username}`}
++                          >
++                            Sabotage 😈
++                          </button>
++                        </div>
++                      )}
+                     </div>
+                   </div>
+                 </div>
+@@ -150,6 +196,18 @@ export default function LeaderboardGrid() {
+           );
+         })}
+       </div>
++      {selectedSabotagePost && (
++        <SabotageSelectionModal
++          isOpen={isModalOpen}
++          onClose={() => {
++            setIsModalOpen(false);
++            setSelectedSabotagePost(null);
++          }}
++          postId={selectedSabotagePost.id}
++          postTitle={selectedSabotagePost.title}
++          postAuthorId={selectedSabotagePost.authorId}
++        />
++      )}
+     </div>
+   );
+ }
+diff --git a/apps/frontend/src/domains/sabotage/components/ChaosListener.tsx b/apps/frontend/src/domains/sabotage/components/ChaosListener.tsx
 new file mode 100644
-index 0000000..ec42452
+index 0000000..3c0bd26
 --- /dev/null
-+++ b/apps/frontend/src/domains/anti-ux/components/EvasiveButton.tsx
-@@ -0,0 +1,523 @@
++++ b/apps/frontend/src/domains/sabotage/components/ChaosListener.tsx
+@@ -0,0 +1,69 @@
 +'use client';
 +
-+import React, { useState, useEffect, useRef } from 'react';
-+import { useMercyStore } from '../../../core/store/useMercyStore';
-+import { actionSubmitVote } from '../../../app/actions/posts';
-+import styles from './EvasiveButton.module.css';
++import { useEffect } from 'react';
++import { socket } from '@/core/api/socket.client';
++import { useChaosStore } from '@/core/store/useChaosStore';
++import { useAuthStore } from '@/core/store/useAuthStore';
 +
-+interface EvasiveButtonProps {
-+  targetId: string;
-+  targetType: 'post' | 'comment';
-+  onSuccess?: (data: any) => void;
-+}
++export default function ChaosListener() {
++  const addSabotage = useChaosStore((s) => s.addSabotage);
++  const clearExpired = useChaosStore((s) => s.clearExpired);
++  const activeSabotages = useChaosStore((s) => s.activeSabotages);
++  const currentUser = useAuthStore((s) => s.user);
 +
-+export default function EvasiveButton({
-+  targetId,
-+  targetType,
-+  onSuccess
-+}: EvasiveButtonProps) {
-+  const [dodges, setDodges] = useState(0);
-+  const [isVibrating, setIsVibrating] = useState(false);
-+  const [comboCount, setComboCount] = useState(0);
-+  const [cooldownLeft, setCooldownLeft] = useState(0);
-+  const [tooltip, setTooltip] = useState<string | null>(null);
-+  const [offset, setOffset] = useState({ x: 0, y: 0 });
-+  const [isSubmitting, setIsSubmitting] = useState(false);
-+  const [isKeyboardUser, setIsKeyboardUser] = useState(false);
-+
-+  const buttonRef = useRef<HTMLButtonElement>(null);
-+  const timerRef = useRef<NodeJS.Timeout | null>(null);
-+  const isKeyboardUserRef = useRef(false);
-+  const isSubmittingRef = useRef(false);
-+  const audioCtxRef = useRef<AudioContext | null>(null);
-+
-+  const mercyActive = useMercyStore((state) => state.isMercyActive);
-+  const incrementFailures = useMercyStore((state) => state.incrementFailures);
-+  const resetFailures = useMercyStore((state) => state.resetFailures);
-+
-+  // 1. Detect prefers-reduced-motion
-+  const [reducedMotion, setReducedMotion] = useState(false);
 +  useEffect(() => {
-+    if (typeof window !== 'undefined') {
-+      const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-+      setReducedMotion(mediaQuery.matches);
-+      const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-+      mediaQuery.addEventListener('change', handler);
-+      return () => mediaQuery.removeEventListener('change', handler);
++    if (!socket) return;
++    
++    if (!socket.connected) {
++      socket.connect();
 +    }
-+  }, []);
 +
-+  // 2. Keyboard vs Mouse user detection
-+  useEffect(() => {
-+    if (typeof window === 'undefined') return;
-+    const handleKeyDown = (e: KeyboardEvent) => {
-+      if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') {
-+        isKeyboardUserRef.current = true;
-+        setIsKeyboardUser(true);
-+      }
++    const handleSabotage = (data: { targetId: string; effectType: string; authorId: string }) => {
++      addSabotage({
++        id: Math.random().toString(),
++        targetId: data.targetId,
++        effectType: data.effectType,
++        authorId: data.authorId,
++        expiresAt: Date.now() + 15000,
++      });
 +    };
-+    const handleMouseMove = () => {
-+      isKeyboardUserRef.current = false;
-+      setIsKeyboardUser(false);
-+    };
-+    window.addEventListener('keydown', handleKeyDown);
-+    window.addEventListener('mousemove', handleMouseMove);
++
++    socket.on('sabotage.deployed', handleSabotage);
++
 +    return () => {
-+      window.removeEventListener('keydown', handleKeyDown);
-+      window.removeEventListener('mousemove', handleMouseMove);
-+    };
-+  }, []);
-+
-+  // Reset offset and state when Mercy Mode is activated
-+  useEffect(() => {
-+    if (mercyActive) {
-+      setOffset({ x: 0, y: 0 });
-+      const btn = buttonRef.current;
-+      if (btn) {
-+        btn.style.setProperty('--offset-x', '0px');
-+        btn.style.setProperty('--offset-y', '0px');
-+      }
-+      setIsVibrating(false);
-+      setComboCount(0);
-+      setDodges(0);
-+    }
-+  }, [mercyActive]);
-+
-+  // 3. Evasion Proximity Event Handler (Mouse only)
-+  useEffect(() => {
-+    if (
-+      isVibrating ||
-+      cooldownLeft > 0 ||
-+      reducedMotion ||
-+      mercyActive ||
-+      isKeyboardUserRef.current ||
-+      isKeyboardUser
-+    ) {
-+      return;
-+    }
-+
-+    const handleMouseMoveGlobal = (e: MouseEvent) => {
-+      const btn = buttonRef.current;
-+      if (!btn) return;
-+
-+      // Do not evade if the button is currently keyboard-focused
-+      if (document.activeElement === btn) return;
-+
-+      const rect = btn.getBoundingClientRect();
-+      const btnCenterX = rect.left + rect.width / 2;
-+      const btnCenterY = rect.top + rect.height / 2;
-+
-+      const dx = e.clientX - btnCenterX;
-+      const dy = e.clientY - btnCenterY;
-+      const distance = Math.sqrt(dx * dx + dy * dy);
-+
-+      if (distance < 50) {
-+        // Compute escape angle
-+        const angle = Math.atan2(dy, dx);
-+        // Translate in opposite direction
-+        const moveDistance = 80 + Math.random() * 50;
-+        const newOffsetX = offset.x - Math.cos(angle) * moveDistance;
-+        const newOffsetY = offset.y - Math.sin(angle) * moveDistance;
-+
-+        // Clamp to keep button on-screen
-+        const clampX = Math.max(-window.innerWidth / 3, Math.min(window.innerWidth / 3, newOffsetX));
-+        const clampY = Math.max(-window.innerHeight / 3, Math.min(window.innerHeight / 3, newOffsetY));
-+
-+        setOffset({ x: clampX, y: clampY });
-+        btn.style.setProperty('--offset-x', `${clampX}px`);
-+        btn.style.setProperty('--offset-y', `${clampY}px`);
-+
-+        setDodges((d) => {
-+          const next = d + 1;
-+          if (next >= 3) {
-+            setIsVibrating(true);
-+          }
-+          return next;
-+        });
++      if (socket) {
++        socket.off('sabotage.deployed', handleSabotage);
 +      }
 +    };
++  }, [addSabotage]);
 +
-+    window.addEventListener('mousemove', handleMouseMoveGlobal);
-+    return () => window.removeEventListener('mousemove', handleMouseMoveGlobal);
-+  }, [isVibrating, cooldownLeft, reducedMotion, mercyActive, isKeyboardUser, offset]);
-+
-+  // 4. Global Click Outside handler (For resetting combo)
 +  useEffect(() => {
-+    if (!isVibrating) return;
-+
-+    const handleGlobalClick = (e: MouseEvent) => {
-+      const btn = buttonRef.current;
-+      if (btn && btn.contains(e.target as Node)) {
-+        return; // Clicked the button itself
-+      }
-+      triggerComboReset('Synergy levels too low!');
-+    };
-+
-+    document.addEventListener('click', handleGlobalClick);
-+    return () => document.removeEventListener('click', handleGlobalClick);
-+  }, [isVibrating]);
-+
-+  // 5. Cooldown counter effect
-+  useEffect(() => {
-+    if (cooldownLeft === 0) return;
 +    const interval = setInterval(() => {
-+      setCooldownLeft((c) => {
-+        if (c <= 1) {
-+          clearInterval(interval);
-+          return 0;
-+        }
-+        return c - 1;
-+      });
++      clearExpired();
 +    }, 1000);
++
 +    return () => clearInterval(interval);
-+  }, [cooldownLeft]);
++  }, [clearExpired]);
 +
-+  // 6. Tooltip autohide
 +  useEffect(() => {
-+    if (tooltip) {
-+      const t = setTimeout(() => {
-+        setTooltip(null);
-+      }, 2000);
-+      return () => clearTimeout(t);
-+    }
-+  }, [tooltip]);
++    // Clear all sabotage classes first
++    document.body.classList.remove('sabotage-blur', 'sabotage-comic-sans', 'sabotage-papyrus');
 +
-+  // 7. Cleanup timers on unmount
++    if (currentUser) {
++      const targetSabotages = activeSabotages.filter(
++        (s) => s.authorId === currentUser.id && s.effectType !== 'deduct_calories'
++      );
++      targetSabotages.forEach((s) => {
++        document.body.classList.add(`sabotage-${s.effectType}`);
++      });
++    }
++  }, [activeSabotages, currentUser]);
++
 +  useEffect(() => {
 +    return () => {
-+      if (timerRef.current) {
-+        clearTimeout(timerRef.current);
-+      }
++      document.body.classList.remove('sabotage-blur', 'sabotage-comic-sans', 'sabotage-papyrus');
 +    };
 +  }, []);
 +
-+  const triggerComboReset = (reason: string) => {
-+    if (timerRef.current) {
-+      clearTimeout(timerRef.current);
-+      timerRef.current = null;
-+    }
-+    setComboCount(0);
-+    setDodges(0);
-+    setIsVibrating(false);
-+
-+    // Relocate to a random spot to start over
-+    const newX = (Math.random() - 0.5) * 160;
-+    const newY = (Math.random() - 0.5) * 120;
-+    setOffset({ x: newX, y: newY });
-+    const btn = buttonRef.current;
-+    if (btn) {
-+      btn.style.setProperty('--offset-x', `${newX}px`);
-+      btn.style.setProperty('--offset-y', `${newY}px`);
-+    }
-+
-+    setTooltip(reason);
-+    incrementFailures();
-+  };
-+
-+  // Web Audio synth airhorn effect
-+  const playAirhorn = () => {
-+    try {
-+      let ctx = audioCtxRef.current;
-+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-+      if (!ctx && AudioContextClass) {
-+        ctx = new AudioContextClass();
-+        audioCtxRef.current = ctx;
-+      }
-+      if (!ctx) return;
-+
-+      if (ctx.state === 'suspended') {
-+        ctx.resume();
-+      }
-+
-+      const frequencies = [220, 222, 329.63, 440, 443];
-+      const oscillators = frequencies.map((f) => {
-+        const osc = ctx!.createOscillator();
-+        osc.type = 'sawtooth';
-+        osc.frequency.setValueAtTime(f, ctx!.currentTime);
-+        return osc;
-+      });
-+
-+      const gainNode = ctx.createGain();
-+      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
-+
-+      oscillators.forEach((osc) => osc.connect(gainNode));
-+      gainNode.connect(ctx!.destination);
-+
-+      oscillators.forEach((osc) => {
-+        osc.start();
-+        osc.stop(ctx!.currentTime + 1.2);
-+      });
-+    } catch (err) {
-+      console.error('Failed to play synth airhorn:', err);
-+    }
-+  };
-+
-+  // HTML5 Canvas confetti explosion
-+  const triggerConfetti = () => {
-+    const canvas = document.createElement('canvas');
-+    canvas.style.position = 'fixed';
-+    canvas.style.top = '0';
-+    canvas.style.left = '0';
-+    canvas.style.width = '100vw';
-+    canvas.style.height = '100vh';
-+    canvas.style.pointerEvents = 'none';
-+    canvas.style.zIndex = '9999';
-+    document.body.appendChild(canvas);
-+
-+    const ctx = canvas.getContext('2d');
-+    if (!ctx) return;
-+
-+    canvas.width = window.innerWidth;
-+    canvas.height = window.innerHeight;
-+
-+    const colors = ['#f43f5e', '#3b82f6', '#10b981', '#eab308', '#a855f7', '#ff7a00'];
-+    const particles: any[] = [];
-+
-+    for (let i = 0; i < 120; i++) {
-+      particles.push({
-+        x: canvas.width / 2,
-+        y: canvas.height * 0.7,
-+        vx: (Math.random() - 0.5) * 18,
-+        vy: -12 - Math.random() * 15,
-+        radius: Math.random() * 5 + 3,
-+        color: colors[Math.floor(Math.random() * colors.length)],
-+        rotation: Math.random() * 360,
-+        rotationSpeed: (Math.random() - 0.5) * 8,
-+        opacity: 1,
-+      });
-+    }
-+
-+    const render = () => {
-+      ctx.clearRect(0, 0, canvas.width, canvas.height);
-+      let active = false;
-+
-+      particles.forEach((p) => {
-+        p.x += p.vx;
-+        p.y += p.vy;
-+        p.vy += 0.45; // gravity
-+        p.vx *= 0.98;
-+        p.rotation += p.rotationSpeed;
-+        p.opacity -= 0.012;
-+
-+        if (p.opacity > 0) {
-+          active = true;
-+          ctx.save();
-+          ctx.translate(p.x, p.y);
-+          ctx.rotate((p.rotation * Math.PI) / 180);
-+          ctx.fillStyle = p.color;
-+          ctx.globalAlpha = p.opacity;
-+          ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 2);
-+          ctx.restore();
-+        }
-+      });
-+
-+      if (active) {
-+        requestAnimationFrame(render);
-+      } else {
-+        document.body.removeChild(canvas);
-+      }
-+    };
-+
-+    render();
-+  };
-+
-+  const triggerScreenShake = () => {
-+    if (typeof window === 'undefined') return;
-+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-+    if (mediaQuery.matches) return;
-+
-+    document.body.classList.add('screen-shake');
-+    setTimeout(() => {
-+      document.body.classList.remove('screen-shake');
-+    }, 500);
-+  };
-+
-+  const handleSuccess = async () => {
-+    if (isSubmittingRef.current) return;
-+    isSubmittingRef.current = true;
-+    setIsSubmitting(true);
-+    try {
-+      const res = await actionSubmitVote(targetId, targetType);
-+      if (res.success) {
-+        playAirhorn();
-+        triggerScreenShake();
-+        triggerConfetti();
-+
-+        setCooldownLeft(5);
-+        setDodges(0);
-+        setComboCount(0);
-+        setIsVibrating(false);
-+        setOffset({ x: 0, y: 0 });
-+
-+        const btn = buttonRef.current;
-+        if (btn) {
-+          btn.style.setProperty('--offset-x', '0px');
-+          btn.style.setProperty('--offset-y', '0px');
-+        }
-+
-+        if (onSuccess) {
-+          onSuccess(res.data);
-+        }
-+      } else {
-+        setTooltip(res.error?.message || 'Vote failed');
-+      }
-+    } catch (err: any) {
-+      setTooltip(err.message || 'Error occurred');
-+    } finally {
-+      setIsSubmitting(false);
-+      isSubmittingRef.current = false;
-+    }
-+  };
-+
-+  const handleTouchStart = (e: React.TouchEvent<HTMLButtonElement>) => {
-+    const isBypass = reducedMotion || mercyActive;
-+    if (isVibrating || cooldownLeft > 0 || isBypass) return;
-+
-+    // Initialize/resume AudioContext synchronously during user tap gesture
-+    if (typeof window !== 'undefined') {
-+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-+      if (AudioContextClass) {
-+        if (!audioCtxRef.current) {
-+          audioCtxRef.current = new AudioContextClass();
-+        }
-+        if (audioCtxRef.current.state === 'suspended') {
-+          audioCtxRef.current.resume();
-+        }
-+      }
-+    }
-+
-+    e.preventDefault();
-+
-+    const angle = Math.random() * Math.PI * 2;
-+    const moveDistance = 100 + Math.random() * 80;
-+    const newOffsetX = offset.x + Math.cos(angle) * moveDistance;
-+    const newOffsetY = offset.y + Math.sin(angle) * moveDistance;
-+
-+    const clampX = Math.max(-window.innerWidth / 3, Math.min(window.innerWidth / 3, newOffsetX));
-+    const clampY = Math.max(-window.innerHeight / 3, Math.min(window.innerHeight / 3, newOffsetY));
-+
-+    setOffset({ x: clampX, y: clampY });
-+    const btn = buttonRef.current;
-+    if (btn) {
-+      btn.style.setProperty('--offset-x', `${clampX}px`);
-+      btn.style.setProperty('--offset-y', `${clampY}px`);
-+    }
-+
-+    setDodges((d) => {
-+      const next = d + 1;
-+      if (next >= 3) {
-+        setIsVibrating(true);
-+      }
-+      return next;
-+    });
-+  };
-+
-+  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
-+    if (cooldownLeft > 0 || isSubmitting || isSubmittingRef.current) return;
-+
-+    // Initialize/resume AudioContext synchronously during user click gesture
-+    if (typeof window !== 'undefined') {
-+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-+      if (AudioContextClass) {
-+        if (!audioCtxRef.current) {
-+          audioCtxRef.current = new AudioContextClass();
-+        }
-+        if (audioCtxRef.current.state === 'suspended') {
-+          audioCtxRef.current.resume();
-+        }
-+      }
-+    }
-+
-+    // Check if bypass triggers: reduced motion, mercy mode, or keyboard Tab/Enter (clientX/Y = 0)
-+    const isBypass =
-+      reducedMotion ||
-+      mercyActive ||
-+      isKeyboardUserRef.current ||
-+      isKeyboardUser ||
-+      e.detail === 0 ||
-+      (e.clientX === 0 && e.clientY === 0);
-+
-+    if (isBypass) {
-+      await handleSuccess();
-+      return;
-+    }
-+
-+    if (isVibrating) {
-+      if (comboCount === 0) {
-+        timerRef.current = setTimeout(() => {
-+          triggerComboReset('Too slow, grandpa!');
-+        }, 2000);
-+      }
-+
-+      const nextCombo = comboCount + 1;
-+      setComboCount(nextCombo);
-+
-+      if (nextCombo >= 5) {
-+        if (timerRef.current) {
-+          clearTimeout(timerRef.current);
-+          timerRef.current = null;
-+        }
-+        await handleSuccess();
-+      }
-+    } else {
-+      // Click was somehow registered while not vibrating and not bypassed. Treat as evasion.
-+      const angle = Math.random() * Math.PI * 2;
-+      const newOffsetX = offset.x + Math.cos(angle) * 120;
-+      const newOffsetY = offset.y + Math.sin(angle) * 120;
-+      const clampX = Math.max(-window.innerWidth / 3, Math.min(window.innerWidth / 3, newOffsetX));
-+      const clampY = Math.max(-window.innerHeight / 3, Math.min(window.innerHeight / 3, newOffsetY));
-+
-+      setOffset({ x: clampX, y: clampY });
-+      const btn = buttonRef.current;
-+      if (btn) {
-+        btn.style.setProperty('--offset-x', `${clampX}px`);
-+        btn.style.setProperty('--offset-y', `${clampY}px`);
-+      }
-+
-+      setDodges((d) => {
-+        const next = d + 1;
-+        if (next >= 3) {
-+          setIsVibrating(true);
-+        }
-+        return next;
-+      });
-+    }
-+  };
-+
-+  const btnClasses = [
-+    styles.button,
-+    isVibrating ? styles.vibrating : '',
-+    cooldownLeft > 0 ? styles.cooldown : ''
-+  ]
-+    .filter(Boolean)
-+    .join(' ');
-+
-+  let buttonText = '🔥 Wasted Calories';
-+  if (cooldownLeft > 0) {
-+    buttonText = `Breathing... (${cooldownLeft}s)`;
-+  } else if (isVibrating) {
-+    buttonText = comboCount > 0 ? `COMBO: ${comboCount}/5` : 'CLICK 5x SPEED!';
-+  }
-+
-+  return (
-+    <div className={styles.container}>
-+      {tooltip && <div className={styles.tooltip}>{tooltip}</div>}
-+      <button
-+        ref={buttonRef}
-+        id={`vote-btn-${targetType}-${targetId}`}
-+        className={btnClasses}
-+        onClick={handleClick}
-+        onTouchStart={handleTouchStart}
-+        disabled={cooldownLeft > 0 || isSubmitting}
-+        style={{
-+          '--offset-x': `${offset.x}px`,
-+          '--offset-y': `${offset.y}px`
-+        } as React.CSSProperties}
-+        aria-label={`Vote to deduct rank for this ${targetType}`}
-+      >
-+        {buttonText}
-+      </button>
-+    </div>
-+  );
++  return null;
 +}
-diff --git a/apps/frontend/src/domains/anti-ux/components/MercyActivationModal.module.css b/apps/frontend/src/domains/anti-ux/components/MercyActivationModal.module.css
+diff --git a/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.module.css b/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.module.css
 new file mode 100644
-index 0000000..e883a2c
+index 0000000..e91ddd1
 --- /dev/null
-+++ b/apps/frontend/src/domains/anti-ux/components/MercyActivationModal.module.css
-@@ -0,0 +1,177 @@
++++ b/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.module.css
+@@ -0,0 +1,324 @@
 +.overlay {
 +  position: fixed;
 +  top: 0;
 +  left: 0;
 +  right: 0;
 +  bottom: 0;
-+  background-color: rgba(15, 23, 42, 0.65);
-+  backdrop-filter: blur(16px);
-+  z-index: 1200;
++  background-color: rgba(15, 23, 42, 0.4);
++  backdrop-filter: blur(8px);
++  z-index: 1000;
 +  display: flex;
 +  justify-content: center;
 +  align-items: center;
-+  padding: 1.5rem;
-+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
++  padding: 1rem;
++  animation: fadeIn 0.25s ease-out;
 +}
 +
 +.modal {
 +  background: #ffffff;
-+  border: 1px solid #fbcfe8;
-+  /* pink border for toddler theme */
-+  border-radius: 24px;
-+  box-shadow:
-+    0 25px 50px -12px rgba(219, 39, 119, 0.15),
-+    0 12px 15px -5px rgba(0, 0, 0, 0.05),
-+    0 0 0 1px rgba(219, 39, 119, 0.05);
++  border: 1px solid #e2e8f0;
++  border-radius: 16px;
++  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 +  width: 100%;
-+  max-width: 480px;
++  max-width: 600px;
 +  max-height: 90vh;
++  overflow-y: auto;
 +  position: relative;
 +  font-family: var(--font-body);
-+  animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-+  display: flex;
-+  flex-direction: column;
-+  overflow: hidden;
-+  padding: 2.25rem 2rem;
-+  align-items: center;
-+  text-align: center;
++  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 +}
 +
 +.header {
-+  margin-bottom: 1.5rem;
++  display: flex;
++  justify-content: space-between;
++  align-items: flex-start;
++  padding: 1.5rem 2rem 0.75rem 2rem;
++}
++
++.titleContainer {
++  flex: 1;
 +}
 +
 +.title {
 +  font-family: var(--font-heading);
-+  font-weight: 900;
-+  font-size: 1.65rem;
-+  color: #db2777;
-+  /* pink-600 */
-+  margin: 0 0 0.5rem 0;
-+  letter-spacing: -0.02em;
++  font-weight: 800;
++  font-size: 1.5rem;
++  color: #0f172a;
++  margin: 0 0 0.25rem 0;
 +}
 +
 +.subtitle {
 +  font-size: 0.9rem;
 +  color: #64748b;
 +  margin: 0;
-+  line-height: 1.5;
++  line-height: 1.4;
 +}
 +
-+.content {
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  gap: 1.25rem;
-+  margin-bottom: 2rem;
-+}
-+
-+.badgeShowcase {
-+  background: linear-gradient(135deg, #fdf2f8, #fce7f3);
-+  border: 2px dashed #fbcfe8;
-+  border-radius: 16px;
-+  padding: 1.25rem 2rem;
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  gap: 0.5rem;
-+  box-shadow: inset 0 2px 4px rgba(219, 39, 119, 0.05);
-+  animation: pulse 2s infinite ease-in-out;
-+}
-+
-+.badgeEmoji {
-+  font-size: 3.5rem;
++.closeBtn {
++  background: transparent;
++  border: none;
++  font-size: 1.5rem;
++  cursor: pointer;
++  color: #94a3b8;
++  padding: 0.25rem;
 +  line-height: 1;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  transition: color 0.2s ease, transform 0.2s ease;
++  border-radius: 50%;
++  width: 32px;
++  height: 32px;
 +}
 +
-+.badgeText {
-+  font-family: var(--font-heading);
-+  font-size: 1rem;
-+  font-weight: 800;
-+  color: #be185d;
-+  letter-spacing: 0.05em;
-+  text-transform: uppercase;
-+}
-+
-+.description {
++.closeBtn:hover {
 +  color: #475569;
-+  font-size: 0.925rem;
-+  line-height: 1.6;
-+  margin: 0;
++  background-color: #f1f5f9;
++  transform: rotate(90deg);
++}
++
++.modalContent {
++  padding: 0 2rem 2rem 2rem;
++}
++
++.inventorySection {
++  margin-top: 1rem;
++}
++
++.inventoryGrid {
++  display: grid;
++  grid-template-columns: repeat(2, 1fr);
++  gap: 1rem;
++  margin-bottom: 1.5rem;
++}
++
++.inventoryCard {
++  border: 2px solid #e2e8f0;
++  border-radius: 12px;
++  padding: 1rem;
++  cursor: pointer;
++  transition: all 0.2s ease;
++  background: #ffffff;
++  display: flex;
++  flex-direction: column;
++  position: relative;
++  overflow: hidden;
++}
++
++.inventoryCard:hover:not(.disabled) {
++  border-color: #3b82f6;
++  transform: translateY(-2px);
++  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
++}
++
++.inventoryCard.selected {
++  border-color: #3b82f6;
++  background: #eff6ff;
++}
++
++.inventoryCard.disabled {
++  opacity: 0.6;
++  cursor: not-allowed;
++  background: #f8fafc;
++}
++
++.cardHeader {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  margin-bottom: 0.5rem;
++}
++
++.cardName {
++  font-family: var(--font-heading);
++  font-weight: 700;
++  font-size: 1.1rem;
++  color: #0f172a;
++}
++
++.cardCount {
++  font-size: 0.8rem;
++  font-weight: 700;
++  padding: 0.25rem 0.5rem;
++  background: #f1f5f9;
++  color: #475569;
++  border-radius: 9999px;
++  transition: all 0.2s ease;
++}
++
++.selected .cardCount {
++  background: #3b82f6;
++  color: #ffffff;
++}
++
++.cardDescription {
++  font-size: 0.85rem;
++  color: #64748b;
++  margin: 0 0 0.75rem 0;
++  line-height: 1.35;
++  flex: 1;
++}
++
++.cardEffect {
++  font-size: 0.8rem;
++  font-weight: 600;
++  color: #ef4444;
++}
++
++.emptyState {
++  text-align: center;
++  padding: 2rem;
++  background: #f8fafc;
++  border-radius: 12px;
++  border: 1px dashed #cbd5e1;
++  margin-bottom: 1.5rem;
++}
++
++.emptyText {
++  color: #64748b;
++  font-size: 0.95rem;
++  margin-bottom: 1rem;
++}
++
++.storeLink {
++  display: inline-block;
++  font-family: var(--font-heading);
++  font-weight: 700;
++  font-size: 0.95rem;
++  color: #3b82f6;
++  text-decoration: none;
++  transition: color 0.2s ease;
++}
++
++.storeLink:hover {
++  color: #1d4ed8;
++  text-decoration: underline;
 +}
 +
 +.actions {
-+  width: 100%;
 +  display: flex;
-+  justify-content: center;
++  justify-content: flex-end;
++  gap: 0.75rem;
++  margin-top: 1rem;
 +}
 +
-+.dismissBtn {
++.cancelBtn {
 +  font-family: var(--font-heading);
 +  font-size: 0.95rem;
-+  font-weight: 800;
-+  padding: 0.85rem 2rem;
-+  border-radius: 12px;
++  font-weight: 700;
++  padding: 0.75rem 1.5rem;
++  border-radius: 10px;
 +  cursor: pointer;
-+  background: #db2777;
++  background: #f1f5f9;
++  color: #475569;
++  border: 1px solid #e2e8f0;
++  transition: all 0.2s ease;
++}
++
++.cancelBtn:hover {
++  background: #e2e8f0;
++  color: #0f172a;
++}
++
++.deployBtn {
++  font-family: var(--font-heading);
++  font-size: 0.95rem;
++  font-weight: 700;
++  padding: 0.75rem 1.5rem;
++  border-radius: 10px;
++  cursor: pointer;
++  background: #ef4444;
 +  color: #ffffff;
 +  border: none;
-+  box-shadow: 0 8px 20px rgba(219, 39, 119, 0.3);
++  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.15);
 +  transition: all 0.2s ease;
-+  width: 100%;
 +}
 +
-+.dismissBtn:hover {
-+  background: #be185d;
-+  box-shadow: 0 10px 24px rgba(219, 39, 119, 0.4);
-+  transform: translateY(-2px);
++.deployBtn:hover:not(:disabled) {
++  background: #dc2626;
++  transform: translateY(-1px);
 +}
 +
-+.dismissBtn:active {
-+  transform: translateY(0);
++.deployBtn:disabled {
++  background: #cbd5e1;
++  color: #94a3b8;
++  box-shadow: none;
++  cursor: not-allowed;
++}
++
++.message {
++  padding: 0.75rem 1rem;
++  border-radius: 8px;
++  font-size: 0.9rem;
++  margin-bottom: 1rem;
++}
++
++.error {
++  background: #fef2f2;
++  border: 1px solid #fca5a5;
++  color: #ef4444;
++}
++
++.success {
++  background: #f0fdf4;
++  border: 1px solid #bbf7d0;
++  color: #16a34a;
++}
++
++.loadingContainer {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: center;
++  padding: 3rem;
++}
++
++.spinner {
++  width: 32px;
++  height: 32px;
++  border: 3px solid #cbd5e1;
++  border-top-color: #3b82f6;
++  border-radius: 50%;
++  animation: spin 0.8s linear infinite;
++  margin-bottom: 1rem;
++}
++
++@keyframes spin {
++  to {
++    transform: rotate(360deg);
++  }
 +}
 +
 +@keyframes fadeIn {
 +  from {
 +    opacity: 0;
 +  }
-+
 +  to {
 +    opacity: 1;
 +  }
 +}
 +
-+@keyframes bounceIn {
++@keyframes scaleIn {
 +  from {
 +    opacity: 0;
-+    transform: scale(0.8) translateY(20px);
++    transform: scale(0.95) translateY(10px);
 +  }
-+
 +  to {
 +    opacity: 1;
 +    transform: scale(1) translateY(0);
 +  }
 +}
 +
-+@keyframes pulse {
-+
-+  0%,
-+  100% {
-+    transform: scale(1);
-+  }
-+
-+  50% {
-+    transform: scale(1.03);
-+  }
-+}
-+
 +@media (prefers-reduced-motion: reduce) {
-+
 +  .overlay,
 +  .modal,
-+  .badgeShowcase,
-+  .dismissBtn {
++  .closeBtn,
++  .deployBtn,
++  .cancelBtn,
++  .inventoryCard,
++  .spinner {
 +    animation: none !important;
 +    transition: none !important;
++    transform: none !important;
 +  }
 +}
-\ No newline at end of file
-diff --git a/apps/frontend/src/domains/anti-ux/components/MercyActivationModal.tsx b/apps/frontend/src/domains/anti-ux/components/MercyActivationModal.tsx
+diff --git a/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx b/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx
 new file mode 100644
-index 0000000..f3314b7
+index 0000000..08b1ca1
 --- /dev/null
-+++ b/apps/frontend/src/domains/anti-ux/components/MercyActivationModal.tsx
-@@ -0,0 +1,58 @@
++++ b/apps/frontend/src/domains/sabotage/components/SabotageSelectionModal.tsx
+@@ -0,0 +1,247 @@
 +'use client';
 +
-+import React from 'react';
-+import { useMercyStore } from '../../../core/store/useMercyStore';
-+import styles from './MercyActivationModal.module.css';
++import React, { useState, useEffect, useRef, useTransition } from 'react';
++import Link from 'next/link';
++import { actionGetUserInventory, actionDeploySabotage } from '../../../app/actions/sabotage';
++import styles from './SabotageSelectionModal.module.css';
 +
-+export default function MercyActivationModal() {
-+  const showActivationModal = useMercyStore((state) => state.showActivationModal);
-+  const dismissActivationModal = useMercyStore((state) => state.dismissActivationModal);
++interface SabotageSelectionModalProps {
++  isOpen: boolean;
++  onClose: () => void;
++  postId: string;
++  postTitle: string;
++  postAuthorId: string;
++}
 +
-+  if (!showActivationModal) return null;
++const SABOTAGE_TYPES = [
++  {
++    effectType: 'blur',
++    name: 'Blur Pack',
++    description: "Blurs the targeted user's screen and their post on the leaderboard.",
++    effect: 'Deducts 100 kcal',
++  },
++  {
++    effectType: 'comic_sans',
++    name: 'Comic Sans Pack',
++    description: "Forces the targeted user's UI to render in Comic Sans.",
++    effect: 'Deducts 150 kcal',
++  },
++  {
++    effectType: 'papyrus',
++    name: 'Papyrus Pack',
++    description: "Forces the targeted user's UI to render in Papyrus.",
++    effect: 'Deducts 150 kcal',
++  },
++  {
++    effectType: 'deduct_calories',
++    name: 'Calories Deduction',
++    description: "A heavy direct hit to the target post's wasted calories.",
++    effect: 'Deducts 500 kcal',
++  },
++] as const;
++
++export default function SabotageSelectionModal({
++  isOpen,
++  onClose,
++  postId,
++  postTitle,
++  postAuthorId,
++}: SabotageSelectionModalProps) {
++  const [inventory, setInventory] = useState<Record<string, number>>({
++    blur: 0,
++    comic_sans: 0,
++    papyrus: 0,
++    deduct_calories: 0,
++  });
++  const [selectedEffect, setSelectedEffect] = useState<string | null>(null);
++  const [error, setError] = useState<string | null>(null);
++  const [success, setSuccess] = useState<boolean>(false);
++  const [isPending, startTransition] = useTransition();
++  const [isDeploying, startDeployTransition] = useTransition();
++
++  const modalRef = useRef<HTMLDivElement>(null);
++
++  useEffect(() => {
++    const handleKeyDown = (e: KeyboardEvent) => {
++      if (e.key === 'Escape' && isOpen) {
++        onClose();
++      }
++    };
++    window.addEventListener('keydown', handleKeyDown);
++    return () => window.removeEventListener('keydown', handleKeyDown);
++  }, [isOpen, onClose]);
++
++  useEffect(() => {
++    if (isOpen) {
++      modalRef.current?.focus();
++      setError(null);
++      setSuccess(false);
++      setSelectedEffect(null);
++
++      // Fetch user inventory
++      startTransition(async () => {
++        const res = await actionGetUserInventory();
++        if (res.success && res.data) {
++          const invMap: Record<string, number> = {
++            blur: 0,
++            comic_sans: 0,
++            papyrus: 0,
++            deduct_calories: 0,
++          };
++          res.data.forEach((item) => {
++            invMap[item.effectType] = item.count;
++          });
++          setInventory(invMap);
++        } else {
++          setError(res.error?.message || 'Failed to fetch inventory.');
++        }
++      });
++    }
++  }, [isOpen]);
++
++  if (!isOpen) return null;
++
++  const handleDeploy = () => {
++    if (!selectedEffect) return;
++    const count = inventory[selectedEffect] || 0;
++    if (count <= 0) return;
++
++    setError(null);
++    setSuccess(false);
++
++    startDeployTransition(async () => {
++      const res = await actionDeploySabotage(postId, selectedEffect);
++      if (res.success) {
++        setSuccess(true);
++        // Decrement local inventory count
++        setInventory((prev) => ({
++          ...prev,
++          [selectedEffect]: Math.max(0, prev[selectedEffect] - 1),
++        }));
++        setTimeout(() => {
++          onClose();
++        }, 1500);
++      } else {
++        setError(res.error?.message || 'Failed to deploy sabotage.');
++      }
++    });
++  };
++
++  const totalInventoryCount = Object.values(inventory).reduce((a, b) => a + b, 0);
 +
 +  return (
-+    <div className={styles.overlay} onClick={dismissActivationModal} id="mercy-activation-overlay">
++    <div className={styles.overlay} onClick={onClose}>
 +      <div
++        ref={modalRef}
 +        className={styles.modal}
 +        onClick={(e) => e.stopPropagation()}
 +        role="dialog"
 +        aria-modal="true"
-+        aria-labelledby="mercy-modal-title"
++        aria-labelledby="sabotage-modal-title"
++        tabIndex={-1}
 +      >
 +        <div className={styles.header}>
 +          <div className={styles.titleContainer}>
-+            <h2 id="mercy-modal-title" className={styles.title}>
-+              👶 Mercy Mode Activated!
++            <h2 id="sabotage-modal-title" className={styles.title}>
++              Sabotage Paradigm 😈
 +            </h2>
 +            <p className={styles.subtitle}>
-+              Let's make things a little easier for your special needs.
++              Deploy a visual disruption against <strong>{postTitle}</strong>.
 +            </p>
 +          </div>
-+        </div>
-+
-+        <div className={styles.content}>
-+          <div className={styles.badgeShowcase}>
-+            <span className={styles.badgeEmoji} role="img" aria-label="Toddler Badge">👶</span>
-+            <span className={styles.badgeText}>Toddler Mode Active</span>
-+          </div>
-+          <p className={styles.description}>
-+            We noticed you failed to interact with our simple, premium, highly-optimized buttons 10 times in a row.
-+            To accommodate your motor coordination levels, all button evasions and corporate sponsor CAPTCHAs are now disabled.
-+            A complimentary humiliation badge has been pinned to your profile.
-+          </p>
-+        </div>
-+
-+        <div className={styles.actions}>
 +          <button
-+            type="button"
-+            className={styles.dismissBtn}
-+            onClick={dismissActivationModal}
-+            id="dismiss-mercy-modal-btn"
++            className={styles.closeBtn}
++            onClick={onClose}
++            aria-label="Close modal"
++            disabled={isDeploying}
 +          >
-+            I accept my limitations
++            &times;
 +          </button>
++        </div>
++
++        <div className={styles.modalContent}>
++          {error && (
++            <div className={`${styles.message} ${styles.error}`} role="alert">
++              ⚠️ {error}
++            </div>
++          )}
++
++          {success && (
++            <div className={`${styles.message} ${styles.success}`} role="alert">
++              🎉 Sabotage deployed successfully! Score has been deducted.
++            </div>
++          )}
++
++          {isPending ? (
++            <div className={styles.loadingContainer}>
++              <div className={styles.spinner} role="status"></div>
++              <p>Opening your arsenal...</p>
++            </div>
++          ) : (
++            <div className={styles.inventorySection}>
++              {totalInventoryCount === 0 ? (
++                <div className={styles.emptyState}>
++                  <p className={styles.emptyText}>
++                    Nice try, but your arsenal is empty. Visit the store to buy some power first!
++                  </p>
++                  <Link href="/sabotage-store" className={styles.storeLink} onClick={onClose}>
++                    🛒 Restock at the Sabotage Storefront
++                  </Link>
++                </div>
++              ) : (
++                <>
++                  <div className={styles.inventoryGrid}>
++                    {SABOTAGE_TYPES.map((type) => {
++                      const count = inventory[type.effectType] || 0;
++                      const isDisabled = count <= 0 || isDeploying;
++                      const isSelected = selectedEffect === type.effectType;
++
++                      return (
++                        <div
++                          key={type.effectType}
++                          className={`${styles.inventoryCard} ${isSelected ? styles.selected : ''
++                            } ${isDisabled ? styles.disabled : ''}`}
++                          onClick={() => {
++                            if (!isDisabled) {
++                              setSelectedEffect(isSelected ? null : type.effectType);
++                            }
++                          }}
++                        >
++                          <div className={styles.cardHeader}>
++                            <span className={styles.cardName}>{type.name}</span>
++                            <span className={styles.cardCount}>Owned: {count}</span>
++                          </div>
++                          <p className={styles.cardDescription}>{type.description}</p>
++                          <span className={styles.cardEffect}>{type.effect}</span>
++                        </div>
++                      );
++                    })}
++                  </div>
++
++                  <div className={styles.actions}>
++                    <button
++                      type="button"
++                      className={styles.cancelBtn}
++                      onClick={onClose}
++                      disabled={isDeploying}
++                    >
++                      Cancel
++                    </button>
++                    <button
++                      type="button"
++                      className={styles.deployBtn}
++                      onClick={handleDeploy}
++                      disabled={!selectedEffect || isDeploying}
++                    >
++                      {isDeploying ? 'Deploying...' : 'Deploy'}
++                    </button>
++                  </div>
++                </>
++              )}
++            </div>
++          )}
 +        </div>
 +      </div>
 +    </div>
 +  );
 +}
-diff --git a/apps/frontend/src/domains/leaderboard/components/CommentSection.tsx b/apps/frontend/src/domains/leaderboard/components/CommentSection.tsx
-index a0ce78e..58740db 100644
---- a/apps/frontend/src/domains/leaderboard/components/CommentSection.tsx
-+++ b/apps/frontend/src/domains/leaderboard/components/CommentSection.tsx
-@@ -7,6 +7,8 @@ import { LeaderboardPost } from '../../../app/actions/leaderboard';
- import { UserProfile } from '../../../app/actions/auth';
- import { actionCreateComment } from '../../../app/actions/posts';
- import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
-+import EvasiveButton from '../../anti-ux/components/EvasiveButton';
-+import { useMercyStore } from '../../../core/store/useMercyStore';
- import styles from './CommentSection.module.css';
- 
- const AVATAR_MAP: Record<string, string> = {
-@@ -24,6 +26,7 @@ interface CommentSectionProps {
+diff --git a/test-results/.last-run.json b/test-results/.last-run.json
+index cbcc1fb..59c67e2 100644
+--- a/test-results/.last-run.json
++++ b/test-results/.last-run.json
+@@ -1,4 +1,7 @@
+ {
+-  "status": "passed",
+-  "failedTests": []
++  "status": "failed",
++  "failedTests": [
++    "255d3433a6aded2a6061-dc023932b403adc8272c",
++    "0394ea5bd1b8ace59db5-07faf36392e484a884ee"
++  ]
  }
- 
- export default function CommentSection({ post, currentUser }: CommentSectionProps) {
-+  const mercyActive = useMercyStore((state) => state.isMercyActive);
-   const [commentText, setCommentText] = useState('');
-   const [hasError, setHasError] = useState(false);
-   const [isSubmitting, setIsSubmitting] = useState(false);
-@@ -74,8 +77,16 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
-               </span>
-               <div className={styles.commentBody}>
-                 <div className={styles.commentMeta}>
--                  <span className={styles.commentAuthor}>{comment.author.username}</span>
--                  <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>
-+                  <span className={styles.commentAuthor}>
-+                    {comment.author.username}
-+                    {comment.author.isMercyActive && (
-+                      <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
-+                    )}
-+                  </span>
-+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-+                    <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>
-+                    <EvasiveButton targetId={comment.id} targetType="comment" />
-+                  </div>
-                 </div>
-                 <p className={styles.commentText}>{comment.content}</p>
-               </div>
-@@ -117,6 +128,7 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
-             isOpen={isCaptchaOpen}
-             onClose={() => setIsCaptchaOpen(false)}
-             onSuccess={handleCaptchaSuccess}
-+            bypass={mercyActive}
-           />
-         </>
-       ) : (
-diff --git a/apps/frontend/src/domains/leaderboard/components/CreatePostModal.tsx b/apps/frontend/src/domains/leaderboard/components/CreatePostModal.tsx
-index 2813d29..50770b7 100644
---- a/apps/frontend/src/domains/leaderboard/components/CreatePostModal.tsx
-+++ b/apps/frontend/src/domains/leaderboard/components/CreatePostModal.tsx
-@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
- import HostileInput from './HostileInput';
- import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
- import { actionCreatePost } from '../../../app/actions/posts';
-+import { useMercyStore } from '../../../core/store/useMercyStore';
- import styles from './CreatePostModal.module.css';
- 
- interface CreatePostModalProps {
-@@ -12,7 +13,9 @@ interface CreatePostModalProps {
- }
- 
- export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProps) {
--  const [title, setTitle] = useState('');
-+  const title = useMercyStore((state) => state.failures >= 0 ? '' : ''); // force dependency on store for reactive updates
-+  const mercyActive = useMercyStore((state) => state.isMercyActive);
-+  const [actualTitle, setTitle] = useState('');
-   const [content, setContent] = useState('');
-   const [titleError, setTitleError] = useState(false);
-   const [contentError, setContentError] = useState(false);
-@@ -53,7 +56,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
- 
-   const handleSubmit = (e: React.FormEvent) => {
-     e.preventDefault();
--    if (titleError || contentError || !title.trim() || !content.trim()) return;
-+    if (titleError || contentError || !actualTitle.trim() || !content.trim()) return;
- 
-     // Show the captcha modal instead of submitting directly
-     setIsCaptchaOpen(true);
-@@ -64,7 +67,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
-     setSubmitError(null);
-     setSubmitSuccess(false);
- 
--    const res = await actionCreatePost(title, content);
-+    const res = await actionCreatePost(actualTitle, content);
- 
-     setIsSubmitting(false);
- 
-@@ -80,7 +83,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
-     }
-   };
- 
--  const isButtonDisabled = isSubmitting || titleError || contentError || !title.trim() || !content.trim();
-+  const isButtonDisabled = isSubmitting || titleError || contentError || !actualTitle.trim() || !content.trim();
- 
-   return (
-     <div className={styles.overlay} onClick={onClose}>
-@@ -114,7 +117,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
-             <HostileInput
-               type="text"
-               id="post-title-input"
--              value={title}
-+              value={actualTitle}
-               onChange={setTitle}
-               placeholder="e.g. leverage synergy scale paradigm"
-               validationType="title"
-@@ -169,6 +172,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
-         isOpen={isCaptchaOpen}
-         onClose={() => setIsCaptchaOpen(false)}
-         onSuccess={handleCaptchaSuccess}
-+        bypass={mercyActive}
-       />
-     </div>
-   );
-diff --git a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
-index 62b4c96..b0c5af6 100644
---- a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
-+++ b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
-@@ -6,6 +6,7 @@ import { socket } from '../../../core/api/socket.client';
- import GoldenRaspberryBadge from './GoldenRaspberryBadge';
- import CommentSection from './CommentSection';
- import { useAuthStore } from '../../../core/store/useAuthStore';
-+import EvasiveButton from '../../anti-ux/components/EvasiveButton';
- import styles from './LeaderboardGrid.module.css';
- 
- const AVATAR_MAP: Record<string, string> = {
-@@ -117,7 +118,12 @@ export default function LeaderboardGrid() {
-                   <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
-                     {AVATAR_MAP[post.author.avatar] || '👤'}
-                   </span>
--                  <span className={styles.authorName}>{post.author.username}</span>
-+                  <span className={styles.authorName}>
-+                    {post.author.username}
-+                    {post.author.isMercyActive && (
-+                      <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
-+                    )}
-+                  </span>
-                 </div>
-                 <div className={styles.colTitle}>
-                   <div className={styles.postTitleText}>{post.title}</div>
-@@ -131,6 +137,9 @@ export default function LeaderboardGrid() {
-                         <GoldenRaspberryBadge />
-                       </div>
-                     )}
-+                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-+                      <EvasiveButton targetId={post.id} targetType="post" />
-+                    </div>
-                   </div>
-                 </div>
-               </div>
-diff --git a/tests/e2e/evasive-vote.spec.ts b/tests/e2e/evasive-vote.spec.ts
+\ No newline at end of file
+diff --git a/tests/e2e/sabotage-broadcast.spec.ts b/tests/e2e/sabotage-broadcast.spec.ts
 new file mode 100644
-index 0000000..698a501
+index 0000000..2ae8c46
 --- /dev/null
-+++ b/tests/e2e/evasive-vote.spec.ts
-@@ -0,0 +1,234 @@
++++ b/tests/e2e/sabotage-broadcast.spec.ts
+@@ -0,0 +1,125 @@
 +import { test, expect } from '@playwright/test';
 +
-+test.describe('Evasive Vote Button E2E', () => {
-+  test.beforeEach(async ({ page }) => {
-+    await page.context().clearCookies();
-+  });
++test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
++  test('should register two users, buy/deploy a sabotage pack, and broadcast real-time visual distortion & score updates', async ({ browser }) => {
++    test.setTimeout(90000);
++    // 1. Create Context A and User A
++    const contextA = await browser.newContext();
++    const pageA = await contextA.newPage();
++    await contextA.clearCookies();
 +
-+  async function registerAndGoToLeaderboard(page: any) {
-+    // Register a new user (User A)
-+    await page.goto('/auth');
-+    await page.click('button:has-text("Register now")');
-+    const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-+    const uniqueUsername = `evasive_user_${uniqueSuffix}`;
-+    await page.fill('#username', uniqueUsername);
-+    await page.fill('#password', 'securePassword123');
-+    await page.click('button[type="submit"]');
-+    await expect(page).toHaveURL(/\/profile/);
++    // Register User A
++    await pageA.goto('/auth');
++    await pageA.click('button:has-text("Register now")');
++    const userAUsername = `usera_${Date.now()}`;
++    await pageA.fill('#username', userAUsername);
++    await pageA.fill('#password', 'pass1234');
++    await pageA.click('button[type="submit"]');
++    await expect(pageA).toHaveURL(/\/profile/);
 +
-+    // Go back to homepage
-+    await page.goto('/');
-+
-+    // Propose a paradigm (create a post as User A)
-+    await page.click('button:has-text("Propose a Paradigm")');
-+    const titleInput = page.locator('#post-title-input');
-+    const contentInput = page.locator('#post-content-input');
-+    const uniqueTitle = `Leverage synergy paradigm ${uniqueSuffix}`;
-+    await titleInput.fill(uniqueTitle);
++    // Create a post as User A
++    await pageA.goto('/');
++    await pageA.click('button:has-text("Propose a Paradigm")');
++    const titleInput = pageA.locator('#post-title-input');
++    const postTitle = `Leverage synergy paradigm A ${Date.now()}`;
++    await titleInput.fill(postTitle);
++    const contentInput = pageA.locator('#post-content-input');
 +    await contentInput.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-+    await page.click('button:has-text("Propose Paradigm")');
++    await pageA.click('button:has-text("Propose Paradigm")');
 +
 +    // Solve Ad Captcha
-+    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
-+    const postAdText = await page.locator('#sponsor-ad-text').textContent();
++    await expect(pageA.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
++    const postAdText = await pageA.locator('#sponsor-ad-text').textContent();
 +    expect(postAdText).not.toBeNull();
-+    await page.fill('#ad-verification-input', postAdText!);
-+    await page.click('button:has-text("Verify & Submit")');
++    await pageA.fill('#ad-verification-input', postAdText!);
++    await pageA.click('button:has-text("Verify & Submit")');
 +
-+    // Wait for modal to disappear
-+    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
++    // Wait for the modal to close and verify post is on the leaderboard
++    await expect(pageA.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible({ timeout: 5000 });
++    const postRowLocator = pageA.locator('div[class*="postRowWrapper"]').filter({ hasText: postTitle });
++    await expect(postRowLocator).toBeVisible();
 +
-+    // Log out User A by clearing cookies
-+    await page.context().clearCookies();
++    // Read the initial score of the post
++    const initialScoreText = await postRowLocator.locator(`[class*="scoreValue"]`).textContent();
++    expect(initialScoreText).not.toBeNull();
++    const initialScoreNumber = parseInt(initialScoreText!.replace(/[^0-9]/g, ''));
 +
-+    // Register User B to vote on User A's post
-+    await page.goto('/auth');
-+    await page.click('button:has-text("Register now")');
-+    const userBUsername = `voter_user_${uniqueSuffix}`;
-+    await page.fill('#username', userBUsername);
-+    await page.fill('#password', 'securePassword123');
-+    await page.click('button[type="submit"]');
-+    await expect(page).toHaveURL(/\/profile/);
++    // 2. Create Context B and User B
++    const contextB = await browser.newContext();
++    const pageB = await contextB.newPage();
++    await contextB.clearCookies();
 +
-+    // Go back to homepage as User B
-+    await page.goto('/');
++    // Register User B
++    await pageB.goto('/auth');
++    await pageB.click('button:has-text("Register now")');
++    const userBUsername = `userb_${Date.now()}`;
++    await pageB.fill('#username', userBUsername);
++    await pageB.fill('#password', 'pass1234');
++    await pageB.click('button[type="submit"]');
++    await expect(pageB).toHaveURL(/\/profile/);
 +
-+    // Verify post is on the leaderboard
-+    const postRow = page.locator('div[class*="postRowWrapper"]', { hasText: uniqueTitle });
-+    await expect(postRow).toBeVisible();
++    // Go to Sabotage Store and purchase a Blur Pack
++    await pageB.goto('/sabotage-store');
++    await expect(pageB.locator('[data-testid="inv-blur"]')).toContainText('0');
++    await pageB.locator('[data-testid="buy-button-blur"]').click();
++    await expect(pageB.locator('[data-testid="checkout-success-banner"]')).toBeVisible();
++    await expect(pageB.locator('[data-testid="inv-blur"]')).toContainText('1');
 +
-+    const scoreLocator = postRow.locator('[class*="scoreValue"]');
-+    const scoreText = await scoreLocator.textContent();
-+    const initialScore = scoreText ? parseInt(scoreText.replace(/[^0-9]/g, ''), 10) : 0;
++    // Close checkout success banner
++    await pageB.locator('[data-testid="checkout-success-banner"] button').click();
 +
-+    return { uniqueTitle, postRow, initialScore };
-+  }
++    // Navigate to Leaderboard
++    await pageB.goto('/');
 +
-+  test('should evade mouse hover and require 5 combo clicks in vibrating state to vote', async ({ page }) => {
-+    const { postRow, initialScore } = await registerAndGoToLeaderboard(page);
++    // Find User A's post row on Page B
++    const postRowOnB = pageB.locator('div[class*="postRowWrapper"]').filter({ hasText: postTitle });
++    await expect(postRowOnB).toBeVisible();
 +
-+    // Find the vote button for this post row
-+    const voteBtn = postRow.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtn).toBeVisible();
++    // Click "Sabotage 😈" trigger button
++    await postRowOnB.locator('button:has-text("Sabotage 😈")').click();
 +
-+    // 1. Initial State
-+    let transformX = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    let transformY = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-y'));
-+    expect(transformX === '' || transformX === '0px').toBeTruthy();
-+    expect(transformY === '' || transformY === '0px').toBeTruthy();
++    // Verify modal is displayed and retrieve inventory count
++    await expect(pageB.locator('h2:has-text("Sabotage Paradigm")')).toBeVisible();
++    await pageB.locator('div[class*="inventoryCard"]').filter({ hasText: 'Blur Pack' }).click();
 +
-+    // 2. Proximity Evasion (Hover 1)
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
++    // Deploy visual sabotage
++    await pageB.locator('button:has-text("Deploy")').click();
 +
-+    let offset1X = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    let offset1Y = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-y'));
-+    expect(offset1X).not.toBe('0px');
-+    expect(offset1X).not.toBe('');
++    // Verify success confirmation and wait for modal to auto-close
++    await expect(pageB.locator('text=Sabotage deployed successfully!')).toBeVisible();
++    await expect(pageB.locator('h2:has-text("Sabotage Paradigm")')).not.toBeVisible({ timeout: 5000 });
 +
-+    // Hover 2
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
++    // Verify score is decremented by 100 kcal in real time on both Page A and Page B
++    const expectedScoreText = `${initialScoreNumber - 100} kcal`;
++    await expect(postRowOnB.locator(`[class*="scoreValue"]`)).toHaveText(expectedScoreText);
++    await expect(postRowLocator.locator(`[class*="scoreValue"]`)).toHaveText(expectedScoreText);
 +
-+    let offset2X = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    expect(offset2X).not.toBe(offset1X);
++    // Verify row-level distortion is applied on Page B (non-author)
++    const postRowElementOnB = postRowOnB.locator('div[class*="postRow"]:not([class*="postRowWrapper"])');
++    await expect(postRowElementOnB).toHaveClass(/post-blur/);
 +
-+    // Hover 3 (triggers vibrating state)
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
++    // Verify screen reader bypass is active on Page B
++    const srOnlyOnB = postRowOnB.locator('div[class*="srOnly"]');
++    await expect(srOnlyOnB).toBeVisible();
++    await expect(srOnlyOnB).toContainText(userAUsername);
 +
-+    // Should now be vibrating
-+    await expect(voteBtn).toHaveClass(/vibrating/);
-+    await expect(voteBtn).toHaveText(/CLICK 5x SPEED!|COMBO:/);
++    // Verify distorted title block has aria-hidden="true" set on Page B
++    const titleColOnB = postRowOnB.locator('div[class*="colTitle"]');
++    await expect(titleColOnB).toHaveAttribute('aria-hidden', 'true');
 +
-+    // 3. Click 5 times to successfully submit
-+    for (let i = 0; i < 5; i++) {
-+      // In vibrating state it stays at its last position so we can click it using force: true
-+      await voteBtn.click({ force: true });
-+    }
++    // Verify global body-level distortion is applied on Page A (author)
++    const bodyOnA = pageA.locator('body');
++    await expect(bodyOnA).toHaveClass(/sabotage-blur/);
 +
-+    // 4. Verify Cooldown state and +50 kcal
-+    await expect(voteBtn).toHaveClass(/cooldown/);
-+    await expect(voteBtn).toBeDisabled();
-+    await expect(voteBtn).toHaveText(/Breathing.../);
++    // Wait 15 seconds for the sabotage duration to expire (using a 16s timeout to be safe)
++    await pageB.waitForTimeout(16000);
 +
-+    const scoreLocator = postRow.locator('[class*="scoreValue"]');
-+    // Verify score increases by 50
-+    await expect(scoreLocator).toContainText(`${initialScore + 50} kcal`);
-+  });
++    // Verify visual classes are fully cleared and original styling restored
++    await expect(postRowElementOnB).not.toHaveClass(/post-blur/);
++    await expect(bodyOnA).not.toHaveClass(/sabotage-blur/);
 +
-+  test('should reset combo on timeout in vibrating state', async ({ page }) => {
-+    const { postRow } = await registerAndGoToLeaderboard(page);
-+
-+    const voteBtn = postRow.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtn).toBeVisible();
-+
-+    // Dodge 3 times to enter vibrating state
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
-+
-+    await expect(voteBtn).toHaveClass(/vibrating/);
-+
-+    // Click once to start the 2-second combo timer
-+    await voteBtn.click({ force: true });
-+    await expect(voteBtn).toHaveText(/COMBO: 1\/5/);
-+
-+    // Wait for the 2-second timer to expire (let's wait 2.5s)
-+    await page.waitForTimeout(2500);
-+
-+    // Verify combo reset and mockup tooltip shown
-+    await expect(voteBtn).not.toHaveClass(/vibrating/);
-+    const tooltip = postRow.locator('[class*="tooltip"]');
-+    await expect(tooltip).toBeVisible();
-+    await expect(tooltip).toHaveText(/Too slow, grandpa!/);
-+  });
-+
-+  test('should reset combo when clicking outside the button in vibrating state', async ({ page }) => {
-+    const { postRow } = await registerAndGoToLeaderboard(page);
-+
-+    const voteBtn = postRow.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtn).toBeVisible();
-+
-+    // Dodge 3 times
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
-+    await voteBtn.hover();
-+    await page.waitForTimeout(100);
-+
-+    await expect(voteBtn).toHaveClass(/vibrating/);
-+
-+    // Click once
-+    await voteBtn.click({ force: true });
-+    await expect(voteBtn).toHaveText(/COMBO: 1\/5/);
-+
-+    // Click outside on the post title
-+    const titleLocator = postRow.locator('[class*="postTitleText"]');
-+    await titleLocator.click();
-+
-+    // Verify combo reset and tooltip
-+    await expect(voteBtn).not.toHaveClass(/vibrating/);
-+    const tooltip = postRow.locator('[class*="tooltip"]');
-+    await expect(tooltip).toBeVisible();
-+    await expect(tooltip).toHaveText(/Synergy levels too low!/);
-+  });
-+
-+  test('should bypass evasion and vote in a single press when using keyboard navigation', async ({ page }) => {
-+    const { postRow, initialScore } = await registerAndGoToLeaderboard(page);
-+
-+    const voteBtn = postRow.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtn).toBeVisible();
-+
-+    // Simulate Tab key down globally by focusing an element and pressing Tab until button is focused
-+    await page.keyboard.press('Tab');
-+    // Force set the flag or navigate focus
-+    await voteBtn.focus();
-+
-+    // Hover should NOT cause evasion since keyboard is active
-+    await voteBtn.hover();
-+    const transformX = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    expect(transformX === '' || transformX === '0px').toBeTruthy();
-+
-+    // Press Enter to vote in a single keypress
-+    await page.keyboard.press('Enter');
-+
-+    // Verify it bypassed and went straight to cooldown/success state
-+    await expect(voteBtn).toHaveClass(/cooldown/);
-+    await expect(voteBtn).toBeDisabled();
-+    await expect(voteBtn).toHaveText(/Breathing.../);
-+
-+    const scoreLocator = postRow.locator('[class*="scoreValue"]');
-+    await expect(scoreLocator).toContainText(`${initialScore + 50} kcal`);
-+  });
-+
-+  test('should bypass evasion and vote in a single click under prefers-reduced-motion', async ({ page }) => {
-+    // Emulate reduced motion
-+    await page.emulateMedia({ reducedMotion: 'reduce' });
-+
-+    const { postRow, initialScore } = await registerAndGoToLeaderboard(page);
-+
-+    const voteBtn = postRow.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtn).toBeVisible();
-+
-+    // Hover should NOT cause evasion
-+    await voteBtn.hover();
-+    const transformX = await voteBtn.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    expect(transformX === '' || transformX === '0px').toBeTruthy();
-+
-+    // A single click should vote successfully
-+    await voteBtn.click();
-+
-+    // Verify it bypassed and went straight to cooldown
-+    await expect(voteBtn).toHaveClass(/cooldown/);
-+    await expect(voteBtn).toBeDisabled();
-+    await expect(voteBtn).toHaveText(/Breathing.../);
-+
-+    const scoreLocator = postRow.locator('[class*="scoreValue"]');
-+    await expect(scoreLocator).toContainText(`${initialScore + 50} kcal`);
++    // Close both browser contexts
++    await contextA.close();
++    await contextB.close();
 +  });
 +});
-diff --git a/tests/e2e/mercy-threshold.spec.ts b/tests/e2e/mercy-threshold.spec.ts
-new file mode 100644
-index 0000000..55a1441
---- /dev/null
-+++ b/tests/e2e/mercy-threshold.spec.ts
-@@ -0,0 +1,215 @@
-+import { test, expect } from '@playwright/test';
-+
-+test.describe('Mercy Threshold & Toddler Mode E2E', () => {
-+  test.beforeEach(async ({ page }) => {
-+    await page.context().clearCookies();
-+  });
-+
-+  test('should trigger Mercy Mode at 10 failures, bypass CAPTCHA and voting evasion, display baby badges, and allow toggle on profile', async ({ page }) => {
-+    // 1. Register User A to create a post
-+    await page.goto('/auth');
-+    await page.click('button:has-text("Register now")');
-+    const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
-+    const userAUsername = `author_user_${uniqueSuffix}`;
-+    await page.fill('#username', userAUsername);
-+    await page.fill('#password', 'securePassword123');
-+    await page.click('button[type="submit"]');
-+    await expect(page).toHaveURL(/\/profile/);
-+
-+    // Create Post 1 as User A
-+    await page.goto('/');
-+    await page.click('button:has-text("Propose a Paradigm")');
-+    const titleInput1 = page.locator('#post-title-input');
-+    const contentInput1 = page.locator('#post-content-input');
-+    const post1Title = `Leverage synergy paradigm ${uniqueSuffix}`;
-+    await titleInput1.fill(post1Title);
-+    await contentInput1.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-+    await page.click('button:has-text("Propose Paradigm")');
-+
-+    // Solve Ad Captcha 1
-+    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
-+    const adText1 = await page.locator('#sponsor-ad-text').textContent();
-+    expect(adText1).not.toBeNull();
-+    await page.fill('#ad-verification-input', adText1!);
-+    await page.click('button:has-text("Verify & Submit")');
-+    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
-+
-+    // Log out User A
-+    await page.context().clearCookies();
-+
-+    // 2. Register User B (The frustrated voter)
-+    await page.goto('/auth');
-+    await page.click('button:has-text("Register now")');
-+    const userBUsername = `frustrated_user_${uniqueSuffix}`;
-+    await page.fill('#username', userBUsername);
-+    await page.fill('#password', 'securePassword123');
-+    await page.click('button[type="submit"]');
-+    await expect(page).toHaveURL(/\/profile/);
-+
-+    // Go back to homepage as User B
-+    await page.goto('/');
-+
-+    // Prevent header from intercepting mouse hovers and clicks
-+    await page.evaluate(() => {
-+      const header = document.querySelector('header');
-+      if (header) {
-+        (header as HTMLElement).style.pointerEvents = 'none';
-+      }
-+    });
-+
-+    // Locate Post 1 and its vote button
-+    const post1Row = page.locator('div[class*="postRowWrapper"]', { hasText: post1Title });
-+    await expect(post1Row).toBeVisible();
-+    const voteBtn1 = post1Row.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtn1).toBeVisible();
-+
-+    const targetButtonId = await voteBtn1.getAttribute('id');
-+    await page.evaluate(({ targetId, targetTitle }) => {
-+      const buttons = document.querySelectorAll('button[id^="vote-btn-post-"]');
-+      buttons.forEach(btn => {
-+        if (btn.id !== targetId) {
-+          (btn as HTMLElement).style.pointerEvents = 'none';
-+        }
-+      });
-+
-+      const rows = document.querySelectorAll('div[class*="postRowWrapper"]');
-+      rows.forEach(row => {
-+        if (!row.textContent?.includes(targetTitle)) {
-+          (row as HTMLElement).style.pointerEvents = 'none';
-+        }
-+      });
-+    }, { targetId: targetButtonId!, targetTitle: post1Title });
-+
-+    // 3. Fail the vote interaction 10 times to trigger Mercy Mode
-+    const titleText = post1Row.locator('[class*="postTitleText"]');
-+    for (let i = 1; i <= 10; i++) {
-+      // Hover and move away 3 times to reliably enter vibrating state
-+      await titleText.hover();
-+      await page.waitForTimeout(100);
-+      await voteBtn1.hover();
-+      await page.waitForTimeout(150);
-+
-+      await titleText.hover();
-+      await page.waitForTimeout(100);
-+      await voteBtn1.hover();
-+      await page.waitForTimeout(150);
-+
-+      await titleText.hover();
-+      await page.waitForTimeout(100);
-+      await voteBtn1.hover();
-+      await page.waitForTimeout(150);
-+
-+      await expect(voteBtn1).toHaveClass(/vibrating/);
-+
-+      // Click once to start the combo timer
-+      await voteBtn1.click({ force: true });
-+      await expect(voteBtn1).toHaveText(/COMBO: 1\/5/);
-+
-+      // Click outside (the hero title) to reset and count a failure without expanding the post row
-+      await page.locator('h1:has-text("The Hall of Inefficiency")').click();
-+
-+      // Verify combo reset
-+      await expect(voteBtn1).not.toHaveClass(/vibrating/);
-+    }
-+
-+    // 4. Verify Mercy Activation Modal pops up on the 10th failure
-+    const mercyModal = page.locator('#mercy-activation-overlay');
-+    await expect(mercyModal).toBeVisible();
-+    await expect(page.locator('h2#mercy-modal-title')).toContainText('Mercy Mode Activated!');
-+
-+    // Dismiss the modal
-+    await page.click('#dismiss-mercy-modal-btn');
-+    await expect(mercyModal).not.toBeVisible();
-+
-+    // 5. Verify Baby Badge 👶 in navigation (reenable pointer events temporarily to allow nav content check if needed)
-+    const navBtn = page.locator('#nav-profile-btn');
-+    await expect(navBtn).toContainText('👶');
-+
-+    // 6. Verify voting now succeeds with a single standard click (no vibrating state)
-+    // Hover should NOT cause evasion since Mercy Mode is active
-+    await voteBtn1.hover();
-+    const transform1X = await voteBtn1.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    expect(transform1X === '' || transform1X === '0px').toBeTruthy();
-+
-+    // Single click should submit vote directly and enter cooldown
-+    await voteBtn1.click();
-+    await expect(voteBtn1).toHaveClass(/cooldown/);
-+    await expect(voteBtn1).toBeDisabled();
-+
-+    // 7. Verify CAPTCHA bypass when creating a post
-+    // Re-enable pointer events for navigation or interaction
-+    await page.evaluate(() => {
-+      const header = document.querySelector('header');
-+      if (header) {
-+        (header as HTMLElement).style.pointerEvents = 'auto';
-+      }
-+    });
-+
-+    await page.click('button:has-text("Propose a Paradigm")');
-+    await expect(page.locator('h2:has-text("Propose a Paradigm")')).toBeVisible();
-+
-+    const titleInputB = page.locator('#post-title-input');
-+    const contentInputB = page.locator('#post-content-input');
-+    await titleInputB.fill(`Leverage synergy ${uniqueSuffix}`);
-+    await contentInputB.fill('This is a paradigm proposed with mercy active. We will touch base to pivot and scale the KPI.');
-+
-+    // Propose paradigm -> captcha is bypassed, so it should succeed immediately
-+    await page.click('button:has-text("Propose Paradigm")');
-+
-+    // Verification modal should NOT remain visible and success banner should show
-+    const adCaptchaModal = page.locator('#ad-captcha-overlay');
-+    await expect(adCaptchaModal).not.toBeVisible();
-+    await expect(page.locator('text=Paradigm successfully proposed!')).toBeVisible();
-+
-+    // Wait for the modal to close
-+    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
-+
-+    // 8. Verify baby badge 👶 shown next to User B's post row on the leaderboard
-+    const newPostRow = page.locator('div[class*="postRowWrapper"]', { hasText: `Leverage synergy ${uniqueSuffix}` });
-+    await expect(newPostRow).toBeVisible();
-+    const authorSpan = newPostRow.locator('[class*="authorName"]');
-+    await expect(authorSpan).toContainText('👶');
-+
-+    // 9. Go to Profile Page and check settings
-+    await page.goto('/profile');
-+    await expect(page).toHaveURL(/\/profile/);
-+    await expect(page.locator('h1')).toContainText('👶');
-+    await expect(page.locator('h3:has-text("Toddler Settings")')).toBeVisible();
-+
-+    // Verify checkbox is checked
-+    const toggle = page.locator('#mercy-mode-toggle');
-+    await expect(toggle).toBeChecked();
-+
-+    // 10. Turn Mercy Mode OFF on Profile Page
-+    await page.uncheck('#mercy-mode-toggle');
-+    await expect(page.locator('h1')).not.toContainText('👶');
-+
-+    // 11. Go back to homepage, wait for cooldown, and verify evasion is restored
-+    await page.goto('/');
-+    await expect(navBtn).not.toContainText('👶');
-+
-+    // Disable pointer events on header again for clean hover
-+    await page.evaluate(() => {
-+      const header = document.querySelector('header');
-+      if (header) {
-+        (header as HTMLElement).style.pointerEvents = 'none';
-+      }
-+    });
-+
-+    // Locate the first post again
-+    const postRowReloaded = page.locator('div[class*="postRowWrapper"]', { hasText: post1Title });
-+    await expect(postRowReloaded).toBeVisible();
-+    const voteBtnReloaded = postRowReloaded.locator('button[id^="vote-btn-post-"]');
-+    await expect(voteBtnReloaded).toBeVisible();
-+
-+    // Wait for the 5-second cooldown to fully clear (wait 6 seconds)
-+    await page.waitForTimeout(6000);
-+
-+    // Hover voteBtnReloaded and verify proximity evasion is active again (it moves)
-+    await voteBtnReloaded.hover();
-+    await page.waitForTimeout(100);
-+    const transform2X = await voteBtnReloaded.evaluate(el => el.style.getPropertyValue('--offset-x'));
-+    expect(transform2X).not.toBe('0px');
-+    expect(transform2X).not.toBe('');
-+  });
-+});
-diff --git a/tests/unit/backend/auth/auth.service.spec.ts b/tests/unit/backend/auth/auth.service.spec.ts
-index f13c4fb..3b1c4fd 100644
---- a/tests/unit/backend/auth/auth.service.spec.ts
-+++ b/tests/unit/backend/auth/auth.service.spec.ts
-@@ -53,7 +53,7 @@ describe('AuthService', () => {
-   describe('register', () => {
-     it('should successfully register a new user', async () => {
-       dbMock.limit.mockResolvedValue([]);
--      
-+
-       const createdUser = {
-         id: 'new-uuid',
-         username: 'newuser',
-@@ -152,4 +152,29 @@ describe('AuthService', () => {
-       expect(result.data.avatar).toBe('avatar_clown');
-     });
-   });
-+
-+  describe('updateMercy', () => {
-+    it('should successfully update mercy failures and isMercyActive status', async () => {
-+      const updatedUser = {
-+        id: 'user-id',
-+        username: 'testuser',
-+        passwordHash: 'hashed-password',
-+        avatar: 'default_avatar',
-+        wastedCalories: 100,
-+        logicViolations: 2,
-+        mercyFailures: 5,
-+        isMercyActive: true,
-+        createdAt: new Date(),
-+        updatedAt: new Date(),
-+      };
-+      dbMock.returning.mockResolvedValue([updatedUser]);
-+
-+      const result = await service.updateMercy('user-id', 5, true);
-+
-+      expect(dbMock.update).toHaveBeenCalled();
-+      expect(result.success).toBe(true);
-+      expect(result.data.mercyFailures).toBe(5);
-+      expect(result.data.isMercyActive).toBe(true);
-+    });
-+  });
- });
-diff --git a/tests/unit/backend/leaderboard/leaderboard.service.spec.ts b/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
-index 5efbc9b..69aece4 100644
---- a/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
-+++ b/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
-@@ -123,7 +123,8 @@ describe('LeaderboardService', () => {
-         {
-           id: 'post-1',
-           title: 'Post 1',
--          content: 'Hello world.', // score: 2 * 5 - 50 = -40
-+          content: 'Hello world.',
-+          wastedCalories: -40,
-           createdAt: new Date(),
-           updatedAt: new Date(),
-           author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
-@@ -131,7 +132,8 @@ describe('LeaderboardService', () => {
-         {
-           id: 'post-2',
-           title: 'Post 2',
--          content: 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.', // score: 245
-+          content: 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.',
-+          wastedCalories: 245,
-           createdAt: new Date(),
-           updatedAt: new Date(),
-           author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },
-@@ -139,7 +141,8 @@ describe('LeaderboardService', () => {
-         {
-           id: 'post-3',
-           title: 'Post 3',
--          content: 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.', // score: 55
-+          content: 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.',
-+          wastedCalories: 55,
-           createdAt: new Date(),
-           updatedAt: new Date(),
-           author: { id: 'user-3', username: 'charlie', avatar: 'avatar3' },
-@@ -174,7 +177,8 @@ describe('LeaderboardService', () => {
-         {
-           id: 'post-older',
-           title: 'Older Post',
--          content: 'Hello world.', // score: -40
-+          content: 'Hello world.',
-+          wastedCalories: -40,
-           createdAt: new Date(now.getTime() - 10000), // Older
-           updatedAt: new Date(),
-           author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
-@@ -182,7 +186,8 @@ describe('LeaderboardService', () => {
-         {
-           id: 'post-newer',
-           title: 'Newer Post',
--          content: 'Hello world.', // score: -40
-+          content: 'Hello world.',
-+          wastedCalories: -40,
-           createdAt: now, // Newer
-           updatedAt: new Date(),
-           author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },
-diff --git a/tests/unit/backend/posts/posts.service.spec.ts b/tests/unit/backend/posts/posts.service.spec.ts
-index 2b0f11a..921cfe0 100644
---- a/tests/unit/backend/posts/posts.service.spec.ts
-+++ b/tests/unit/backend/posts/posts.service.spec.ts
-@@ -17,6 +17,8 @@ describe('PostsService', () => {
-       select: jest.fn().mockReturnThis(),
-       from: jest.fn().mockReturnThis(),
-       where: jest.fn(),
-+      update: jest.fn().mockReturnThis(),
-+      set: jest.fn().mockReturnThis(),
-     };
- 
-     leaderboardServiceMock = {
-@@ -142,4 +144,119 @@ describe('PostsService', () => {
-       ).rejects.toThrow(BadRequestException);
-     });
-   });
-+
-+  describe('vote', () => {
-+    const userId = '11111111-1111-1111-1111-111111111111';
-+    const authorId = '22222222-2222-2222-2222-222222222222';
-+    const postId = '33333333-3333-3333-3333-333333333333';
-+    const commentId = '44444444-4444-4444-4444-444444444444';
-+
-+    it('should successfully increment post wasted calories by 50', async () => {
-+      const mockPost = {
-+        id: postId,
-+        title: 'Mock Post',
-+        wastedCalories: 100,
-+        authorId: authorId,
-+      };
-+      const mockUpdatedPost = {
-+        ...mockPost,
-+        wastedCalories: 150,
-+      };
-+
-+      // first select
-+      dbMock.where.mockResolvedValueOnce([mockPost]);
-+      // then update chain
-+      dbMock.where.mockReturnThis();
-+      dbMock.returning.mockResolvedValueOnce([mockUpdatedPost]);
-+
-+      const result = await service.vote(userId, postId, 'post');
-+
-+      expect(dbMock.select).toHaveBeenCalled();
-+      expect(dbMock.update).toHaveBeenCalled();
-+      expect(dbMock.set).toHaveBeenCalledWith({ wastedCalories: expect.any(Object) });
-+      expect(leaderboardServiceMock.broadcastUpdate).toHaveBeenCalled();
-+      expect(result.success).toBe(true);
-+      expect(result.data.wastedCalories).toBe(150);
-+    });
-+
-+    it('should successfully increment comment wasted calories by 50', async () => {
-+      const mockComment = {
-+        id: commentId,
-+        content: 'Mock Comment',
-+        wastedCalories: 200,
-+        authorId: authorId,
-+      };
-+      const mockUpdatedComment = {
-+        ...mockComment,
-+        wastedCalories: 250,
-+      };
-+
-+      // first select
-+      dbMock.where.mockResolvedValueOnce([mockComment]);
-+      // then update chain
-+      dbMock.where.mockReturnThis();
-+      dbMock.returning.mockResolvedValueOnce([mockUpdatedComment]);
-+
-+      const result = await service.vote(userId, commentId, 'comment');
-+
-+      expect(dbMock.select).toHaveBeenCalled();
-+      expect(dbMock.update).toHaveBeenCalled();
-+      expect(dbMock.set).toHaveBeenCalledWith({ wastedCalories: expect.any(Object) });
-+      expect(leaderboardServiceMock.broadcastUpdate).toHaveBeenCalled();
-+      expect(result.success).toBe(true);
-+      expect(result.data.wastedCalories).toBe(250);
-+    });
-+
-+    it('should throw BadRequestException if targetId is not a valid UUID', async () => {
-+      await expect(
-+        service.vote(userId, 'invalid-uuid', 'post')
-+      ).rejects.toThrow(BadRequestException);
-+    });
-+
-+    it('should throw BadRequestException if user tries to vote on their own post', async () => {
-+      const mockPost = {
-+        id: postId,
-+        title: 'Mock Post',
-+        wastedCalories: 100,
-+        authorId: userId, // self-voting
-+      };
-+
-+      dbMock.where.mockResolvedValueOnce([mockPost]);
-+
-+      await expect(
-+        service.vote(userId, postId, 'post')
-+      ).rejects.toThrow(BadRequestException);
-+    });
-+
-+    it('should throw BadRequestException if user tries to vote on their own comment', async () => {
-+      const mockComment = {
-+        id: commentId,
-+        content: 'Mock Comment',
-+        wastedCalories: 200,
-+        authorId: userId, // self-voting
-+      };
-+
-+      dbMock.where.mockResolvedValueOnce([mockComment]);
-+
-+      await expect(
-+        service.vote(userId, commentId, 'comment')
-+      ).rejects.toThrow(BadRequestException);
-+    });
-+
-+    it('should throw NotFoundException if post target is not found', async () => {
-+      dbMock.where.mockResolvedValueOnce([]);
-+
-+      await expect(
-+        service.vote(userId, postId, 'post')
-+      ).rejects.toThrow(NotFoundException);
-+    });
-+
-+    it('should throw NotFoundException if comment target is not found', async () => {
-+      dbMock.where.mockResolvedValueOnce([]);
-+
-+      await expect(
-+        service.vote(userId, commentId, 'comment')
-+      ).rejects.toThrow(NotFoundException);
-+    });
-+  });
- });
-
 ```
