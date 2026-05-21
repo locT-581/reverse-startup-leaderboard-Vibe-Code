@@ -17,6 +17,8 @@ describe('PostsService', () => {
       select: jest.fn().mockReturnThis(),
       from: jest.fn().mockReturnThis(),
       where: jest.fn(),
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
     };
 
     leaderboardServiceMock = {
@@ -140,6 +142,121 @@ describe('PostsService', () => {
       await expect(
         service.createComment('user-123', 'post-123', 'Short.'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('vote', () => {
+    const userId = '11111111-1111-1111-1111-111111111111';
+    const authorId = '22222222-2222-2222-2222-222222222222';
+    const postId = '33333333-3333-3333-3333-333333333333';
+    const commentId = '44444444-4444-4444-4444-444444444444';
+
+    it('should successfully increment post wasted calories by 50', async () => {
+      const mockPost = {
+        id: postId,
+        title: 'Mock Post',
+        wastedCalories: 100,
+        authorId: authorId,
+      };
+      const mockUpdatedPost = {
+        ...mockPost,
+        wastedCalories: 150,
+      };
+
+      // first select
+      dbMock.where.mockResolvedValueOnce([mockPost]);
+      // then update chain
+      dbMock.where.mockReturnThis();
+      dbMock.returning.mockResolvedValueOnce([mockUpdatedPost]);
+
+      const result = await service.vote(userId, postId, 'post');
+
+      expect(dbMock.select).toHaveBeenCalled();
+      expect(dbMock.update).toHaveBeenCalled();
+      expect(dbMock.set).toHaveBeenCalledWith({ wastedCalories: expect.any(Object) });
+      expect(leaderboardServiceMock.broadcastUpdate).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.data.wastedCalories).toBe(150);
+    });
+
+    it('should successfully increment comment wasted calories by 50', async () => {
+      const mockComment = {
+        id: commentId,
+        content: 'Mock Comment',
+        wastedCalories: 200,
+        authorId: authorId,
+      };
+      const mockUpdatedComment = {
+        ...mockComment,
+        wastedCalories: 250,
+      };
+
+      // first select
+      dbMock.where.mockResolvedValueOnce([mockComment]);
+      // then update chain
+      dbMock.where.mockReturnThis();
+      dbMock.returning.mockResolvedValueOnce([mockUpdatedComment]);
+
+      const result = await service.vote(userId, commentId, 'comment');
+
+      expect(dbMock.select).toHaveBeenCalled();
+      expect(dbMock.update).toHaveBeenCalled();
+      expect(dbMock.set).toHaveBeenCalledWith({ wastedCalories: expect.any(Object) });
+      expect(leaderboardServiceMock.broadcastUpdate).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.data.wastedCalories).toBe(250);
+    });
+
+    it('should throw BadRequestException if targetId is not a valid UUID', async () => {
+      await expect(
+        service.vote(userId, 'invalid-uuid', 'post')
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if user tries to vote on their own post', async () => {
+      const mockPost = {
+        id: postId,
+        title: 'Mock Post',
+        wastedCalories: 100,
+        authorId: userId, // self-voting
+      };
+
+      dbMock.where.mockResolvedValueOnce([mockPost]);
+
+      await expect(
+        service.vote(userId, postId, 'post')
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if user tries to vote on their own comment', async () => {
+      const mockComment = {
+        id: commentId,
+        content: 'Mock Comment',
+        wastedCalories: 200,
+        authorId: userId, // self-voting
+      };
+
+      dbMock.where.mockResolvedValueOnce([mockComment]);
+
+      await expect(
+        service.vote(userId, commentId, 'comment')
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if post target is not found', async () => {
+      dbMock.where.mockResolvedValueOnce([]);
+
+      await expect(
+        service.vote(userId, postId, 'post')
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if comment target is not found', async () => {
+      dbMock.where.mockResolvedValueOnce([]);
+
+      await expect(
+        service.vote(userId, commentId, 'comment')
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

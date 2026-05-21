@@ -33,4 +33,25 @@ export class PostsController {
     }
     return this.postsService.createComment(req.user.sub, postId, body.content);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('vote')
+  async vote(
+    @Request() req: any,
+    @Body() body: { targetId?: string; targetType?: 'post' | 'comment' },
+  ) {
+    if (!body.targetId || !body.targetType) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: 'targetId and targetType are required.' },
+      });
+    }
+    if (body.targetType !== 'post' && body.targetType !== 'comment') {
+      throw new BadRequestException({
+        success: false,
+        error: { message: 'targetType must be post or comment.' },
+      });
+    }
+    return this.postsService.vote(req.user.sub, body.targetId, body.targetType);
+  }
 }

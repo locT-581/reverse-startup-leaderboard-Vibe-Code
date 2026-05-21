@@ -4,7 +4,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
   async register(@Body() body: { username?: string; password?: string }) {
@@ -26,5 +26,15 @@ export class AuthController {
   @Put('profile')
   async updateProfile(@Request() req: any, @Body() body: { username?: string; avatar?: string }) {
     return this.authService.updateProfile(req.user.sub, body.username ?? '', body.avatar ?? '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('mercy')
+  async updateMercy(@Request() req: any, @Body() body: { failures?: number; isMercyActive?: boolean }) {
+    return this.authService.updateMercy(
+      req.user.sub,
+      body.failures ?? 0,
+      body.isMercyActive ?? false
+    );
   }
 }

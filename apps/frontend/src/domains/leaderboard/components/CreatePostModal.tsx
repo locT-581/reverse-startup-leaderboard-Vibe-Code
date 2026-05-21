@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import HostileInput from './HostileInput';
 import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
 import { actionCreatePost } from '../../../app/actions/posts';
+import { useMercyStore } from '../../../core/store/useMercyStore';
 import styles from './CreatePostModal.module.css';
 
 interface CreatePostModalProps {
@@ -12,6 +13,7 @@ interface CreatePostModalProps {
 }
 
 export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProps) {
+  const mercyActive = useMercyStore((state) => state.isMercyActive);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [titleError, setTitleError] = useState(false);
@@ -55,8 +57,11 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     e.preventDefault();
     if (titleError || contentError || !title.trim() || !content.trim()) return;
 
-    // Show the captcha modal instead of submitting directly
-    setIsCaptchaOpen(true);
+    if (mercyActive) {
+      handleCaptchaSuccess();
+    } else {
+      setIsCaptchaOpen(true);
+    }
   };
 
   const handleCaptchaSuccess = async () => {
@@ -169,6 +174,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         isOpen={isCaptchaOpen}
         onClose={() => setIsCaptchaOpen(false)}
         onSuccess={handleCaptchaSuccess}
+        bypass={mercyActive}
       />
     </div>
   );

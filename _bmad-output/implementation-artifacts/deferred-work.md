@@ -16,4 +16,10 @@
 
 - Persistent error message after Skip Ad click [apps/frontend/src/domains/anti-ux/components/AdCaptchaModal.tsx:436] — When clicking the "Skip Ad" button, a "Skip failed!" message is shown. This error remains visible even when the user types a matching string, until the form is submitted.
 
+## Deferred from: code review of 2-3-the-evasive-vote-button.md (2026-05-21)
 
+- Missing E2E Test coverage for Touch Relocation Latency [tests/e2e/evasive-vote.spec.ts:1] — The Playwright test does not assert that touch-based evasion occurs with latency < 50ms, nor does it emulate touch relocations. (Deferred as it's a test quality enhancement rather than a functional bug).
+
+## Deferred from: code review of 2-4-anti-ux-tracker-mercy-threshold.md (2026-05-21)
+
+- Client-side Cookie Manipulation during Register/Login [apps/frontend/src/app/actions/auth.ts:51] — Server Action sets cookies correctly, but client router cache needs a hard refresh or sync for instant auth visibility. Deferred as authentication functionality works as intended.

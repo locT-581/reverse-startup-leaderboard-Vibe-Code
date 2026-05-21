@@ -6,6 +6,7 @@ import { socket } from '../../../core/api/socket.client';
 import GoldenRaspberryBadge from './GoldenRaspberryBadge';
 import CommentSection from './CommentSection';
 import { useAuthStore } from '../../../core/store/useAuthStore';
+import EvasiveButton from '../../anti-ux/components/EvasiveButton';
 import styles from './LeaderboardGrid.module.css';
 
 const AVATAR_MAP: Record<string, string> = {
@@ -117,7 +118,12 @@ export default function LeaderboardGrid() {
                   <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
                     {AVATAR_MAP[post.author.avatar] || '👤'}
                   </span>
-                  <span className={styles.authorName}>{post.author.username}</span>
+                  <span className={styles.authorName}>
+                    {post.author.username}
+                    {post.author.isMercyActive && (
+                      <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
+                    )}
+                  </span>
                 </div>
                 <div className={styles.colTitle}>
                   <div className={styles.postTitleText}>{post.title}</div>
@@ -131,6 +137,9 @@ export default function LeaderboardGrid() {
                         <GoldenRaspberryBadge />
                       </div>
                     )}
+                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <EvasiveButton targetId={post.id} targetType="post" />
+                    </div>
                   </div>
                 </div>
               </div>

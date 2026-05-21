@@ -11,7 +11,7 @@ export class AuthService {
   constructor(
     @Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async register(username: string, passwordHashRaw: string) {
     if (!username || !passwordHashRaw) {
@@ -157,6 +157,26 @@ export class AuthService {
         });
       }
       throw err;
+    }
+  }
+
+  async updateMercy(userId: string, mercyFailures: number, isMercyActive: boolean) {
+    try {
+      const [updatedUser] = await this.db.update(schema.users)
+        .set({ mercyFailures, isMercyActive, updatedAt: new Date() })
+        .where(eq(schema.users.id, userId))
+        .returning();
+
+      const { passwordHash: _, ...profile } = updatedUser;
+      return {
+        success: true,
+        data: profile
+      };
+    } catch (err: any) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: err.message || 'Failed to update mercy state.' }
+      });
     }
   }
 }

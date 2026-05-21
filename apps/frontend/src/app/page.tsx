@@ -4,7 +4,9 @@ import React, { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import LeaderboardGrid from '../domains/leaderboard/components/LeaderboardGrid';
 import CreatePostModal from '../domains/leaderboard/components/CreatePostModal';
+import MercyActivationModal from '../domains/anti-ux/components/MercyActivationModal';
 import { useAuthStore } from '../core/store/useAuthStore';
+import { useMercyStore } from '../core/store/useMercyStore';
 import { actionGetMe } from './actions/auth';
 import styles from './page.module.css';
 
@@ -13,6 +15,7 @@ export default function HomePage() {
   const setUser = useAuthStore((state) => state.setUser);
   const [, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const mercyActive = useMercyStore((state) => state.isMercyActive);
 
   useEffect(() => {
     // Check session on mount to see if user is authenticated
@@ -20,6 +23,10 @@ export default function HomePage() {
       const response = await actionGetMe();
       if (response.success && response.data) {
         setUser(response.data);
+        useMercyStore.getState().setMercyState(
+          response.data.mercyFailures ?? 0,
+          response.data.isMercyActive ?? false
+        );
       } else {
         setUser(null);
       }
@@ -34,9 +41,14 @@ export default function HomePage() {
           <span className={styles.logoText}>Reverse Startup</span>
         </Link>
         <nav className={styles.navArea}>
+          {user && (
+            <Link href="/sabotage-store" className={styles.sabotageLink} data-testid="nav-sabotage-store">
+              😈 Sabotage Store
+            </Link>
+          )}
           {user ? (
-            <Link href="/profile" className={`${styles.navButton} ${styles.secondaryBtn}`}>
-              👤 {user.username}
+            <Link href="/profile" className={`${styles.navButton} ${styles.secondaryBtn}`} id="nav-profile-btn">
+              👤 {user.username} {user.isMercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>}
             </Link>
           ) : (
             <Link href="/auth" className={`${styles.navButton} ${styles.primaryBtn}`}>
@@ -90,6 +102,7 @@ export default function HomePage() {
       </footer>
 
       <CreatePostModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <MercyActivationModal />
     </div>
   );
 }

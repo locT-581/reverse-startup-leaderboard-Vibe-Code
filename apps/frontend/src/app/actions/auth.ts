@@ -8,6 +8,8 @@ export interface UserProfile {
   avatar: string;
   wastedCalories: number;
   logicViolations: number;
+  mercyFailures: number;
+  isMercyActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -187,6 +189,48 @@ export async function actionGetMe(): Promise<ActionResponse<UserProfile>> {
     return {
       success: false,
       error: { message: 'Could not reach session server.' },
+    };
+  }
+}
+
+export async function actionSyncMercyState(
+  failures: number,
+  isMercyActive: boolean
+): Promise<ActionResponse<UserProfile>> {
+  const cookieStore = await cookies();
+  const tokenObj = cookieStore.get('token');
+  const token = tokenObj?.value;
+
+  if (!token) {
+    return {
+      success: false,
+      error: { message: 'Unauthorized. Log in first, please.' },
+    };
+  }
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/mercy`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ failures, isMercyActive }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: { message: data.error?.message || 'Failed to sync mercy state.' },
+      };
+    }
+
+    return { success: true, data: data.data };
+  } catch (err) {
+    return {
+      success: false,
+      error: { message: 'Failed to sync mercy state. Backend was uncooperative.' },
     };
   }
 }

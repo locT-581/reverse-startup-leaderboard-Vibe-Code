@@ -53,7 +53,7 @@ describe('AuthService', () => {
   describe('register', () => {
     it('should successfully register a new user', async () => {
       dbMock.limit.mockResolvedValue([]);
-      
+
       const createdUser = {
         id: 'new-uuid',
         username: 'newuser',
@@ -150,6 +150,31 @@ describe('AuthService', () => {
       expect(result.success).toBe(true);
       expect(result.data.username).toBe('newusername');
       expect(result.data.avatar).toBe('avatar_clown');
+    });
+  });
+
+  describe('updateMercy', () => {
+    it('should successfully update mercy failures and isMercyActive status', async () => {
+      const updatedUser = {
+        id: 'user-id',
+        username: 'testuser',
+        passwordHash: 'hashed-password',
+        avatar: 'default_avatar',
+        wastedCalories: 100,
+        logicViolations: 2,
+        mercyFailures: 5,
+        isMercyActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      dbMock.returning.mockResolvedValue([updatedUser]);
+
+      const result = await service.updateMercy('user-id', 5, true);
+
+      expect(dbMock.update).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.data.mercyFailures).toBe(5);
+      expect(result.data.isMercyActive).toBe(true);
     });
   });
 });

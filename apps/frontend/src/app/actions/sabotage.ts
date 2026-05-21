@@ -3,12 +3,19 @@
 import { cookies } from 'next/headers';
 import { ActionResponse } from './auth';
 
+export interface SabotagePack {
+  id: string;
+  name: string;
+  description: string;
+  price: number; // in cents
+  effectType: 'blur' | 'comic_sans' | 'papyrus' | 'deduct_calories';
+  createdAt: string;
+  updatedAt: string;
+}
+
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
-export async function actionCreatePost(
-  title: string,
-  content: string
-): Promise<ActionResponse<any>> {
+export async function actionGetSabotagePacks(): Promise<ActionResponse<SabotagePack[]>> {
   const cookieStore = await cookies();
   const tokenObj = cookieStore.get('token');
   const token = tokenObj?.value;
@@ -16,25 +23,24 @@ export async function actionCreatePost(
   if (!token) {
     return {
       success: false,
-      error: { message: 'You must be authenticated to propose a paradigm. Log in first!' },
+      error: { message: 'You must be authenticated to browse the Sabotage Store. Log in first!' },
     };
   }
 
   try {
-    const res = await fetch(`${BACKEND_URL}/posts`, {
-      method: 'POST',
+    const res = await fetch(`${BACKEND_URL}/sabotage/packs`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ title, content }),
     });
 
     const data = await res.json();
     if (!res.ok) {
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to submit post.' },
+        error: { message: data.error?.message || data.message || 'Failed to fetch Sabotage Packs.' },
       };
     }
 
@@ -42,15 +48,22 @@ export async function actionCreatePost(
   } catch (err) {
     return {
       success: false,
-      error: { message: 'Network error occurred while proposing paradigm.' },
+      error: { message: 'Network error occurred while fetching Sabotage Packs.' },
     };
   }
 }
 
-export async function actionCreateComment(
-  postId: string,
-  content: string
-): Promise<ActionResponse<any>> {
+export interface CheckoutSessionResponse {
+  url: string;
+  sessionId: string;
+}
+
+export interface UserInventoryItem {
+  effectType: 'blur' | 'comic_sans' | 'papyrus' | 'deduct_calories';
+  count: number;
+}
+
+export async function actionCreateCheckoutSession(packId: string): Promise<ActionResponse<CheckoutSessionResponse>> {
   const cookieStore = await cookies();
   const tokenObj = cookieStore.get('token');
   const token = tokenObj?.value;
@@ -58,25 +71,25 @@ export async function actionCreateComment(
   if (!token) {
     return {
       success: false,
-      error: { message: 'You must be authenticated to solve a problem. Log in first!' },
+      error: { message: 'You must be authenticated to purchase items.' },
     };
   }
 
   try {
-    const res = await fetch(`${BACKEND_URL}/posts/${postId}/comments`, {
+    const res = await fetch(`${BACKEND_URL}/sabotage/checkout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ packId }),
     });
 
     const data = await res.json();
     if (!res.ok) {
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to submit comment.' },
+        error: { message: data.error?.message || data.message || 'Failed to create checkout session.' },
       };
     }
 
@@ -84,15 +97,12 @@ export async function actionCreateComment(
   } catch (err) {
     return {
       success: false,
-      error: { message: 'Network error occurred while submitting solution.' },
+      error: { message: 'Network error occurred during checkout initiation.' },
     };
   }
 }
 
-export async function actionSubmitVote(
-  targetId: string,
-  targetType: 'post' | 'comment'
-): Promise<ActionResponse<any>> {
+export async function actionGetUserInventory(): Promise<ActionResponse<UserInventoryItem[]>> {
   const cookieStore = await cookies();
   const tokenObj = cookieStore.get('token');
   const token = tokenObj?.value;
@@ -100,25 +110,24 @@ export async function actionSubmitVote(
   if (!token) {
     return {
       success: false,
-      error: { message: 'You must be authenticated to cast a vote. Log in first!' },
+      error: { message: 'You must be authenticated to check inventory.' },
     };
   }
 
   try {
-    const res = await fetch(`${BACKEND_URL}/posts/vote`, {
-      method: 'POST',
+    const res = await fetch(`${BACKEND_URL}/sabotage/inventory`, {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ targetId, targetType }),
     });
 
     const data = await res.json();
     if (!res.ok) {
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to submit vote.' },
+        error: { message: data.error?.message || data.message || 'Failed to fetch inventory.' },
       };
     }
 
@@ -126,7 +135,7 @@ export async function actionSubmitVote(
   } catch (err) {
     return {
       success: false,
-      error: { message: 'Network error occurred while submitting vote.' },
+      error: { message: 'Network error occurred while fetching inventory.' },
     };
   }
 }

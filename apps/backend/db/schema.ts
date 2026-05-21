@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, boolean, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const users = pgTable("users", {
@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   avatar: text("avatar").default("default_avatar"),
   wastedCalories: integer("wasted_calories").default(0).notNull(),
   logicViolations: integer("logic_violations").default(0).notNull(),
+  mercyFailures: integer("mercy_failures").default(0).notNull(),
+  isMercyActive: boolean("is_mercy_active").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -61,4 +63,42 @@ export const commentsRelations = relations(comments, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const sabotagePacks = pgTable("sabotage_packs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: integer("price").notNull(), // in cents, ví dụ: 99 = $0.99
+  effectType: text("effect_type").notNull(), // 'blur' | 'comic_sans' | 'papyrus' | 'deduct_calories'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const purchases = pgTable("purchases", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  packId: uuid("pack_id")
+    .references(() => sabotagePacks.id, { onDelete: "cascade" })
+    .notNull(),
+  stripeSessionId: text("stripe_session_id").unique().notNull(),
+  amountPaid: integer("amount_paid").notNull(), // in cents
+  status: text("status").notNull(), // 'pending' | 'completed' | 'failed'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const userSabotages = pgTable("user_sabotages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  effectType: text("effect_type").notNull(), // 'blur' | 'comic_sans' | 'papyrus' | 'deduct_calories'
+  count: integer("count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  unique().on(table.userId, table.effectType)
+]);
 

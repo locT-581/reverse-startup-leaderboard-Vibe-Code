@@ -222,3 +222,27 @@
     font-size: 2rem;
   }
 }
+
+.sabotageLink {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  background: #09090b;
+  color: #d946ef;
+  border: 1px solid #d946ef;
+  box-shadow: 0 0 8px rgba(217, 70, 239, 0.2);
+  display: inline-flex;
+  align-items: center;
+}
+
+.sabotageLink:hover {
+  background: #d946ef;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(217, 70, 239, 0.5);
+  transform: translateY(-1px);
+}

@@ -16,6 +16,7 @@ export interface LeaderboardPost {
     id: string;
     username: string;
     avatar: string;
+    isMercyActive: boolean;
   };
 }
 
@@ -96,12 +97,14 @@ export class LeaderboardService {
         id: schema.posts.id,
         title: schema.posts.title,
         content: schema.posts.content,
+        wastedCalories: schema.posts.wastedCalories,
         createdAt: schema.posts.createdAt,
         updatedAt: schema.posts.updatedAt,
         author: {
           id: schema.users.id,
           username: schema.users.username,
           avatar: schema.users.avatar,
+          isMercyActive: schema.users.isMercyActive,
         },
       })
       .from(schema.posts)
@@ -122,6 +125,7 @@ export class LeaderboardService {
             id: schema.users.id,
             username: schema.users.username,
             avatar: schema.users.avatar,
+            isMercyActive: schema.users.isMercyActive,
           },
         })
         .from(schema.comments)
@@ -156,7 +160,7 @@ export class LeaderboardService {
 
       return {
         ...post,
-        wastedCalories: this.calculateScore(post.content),
+        wastedCalories: post.wastedCalories,
         comments: commentsForPost,
       };
     });

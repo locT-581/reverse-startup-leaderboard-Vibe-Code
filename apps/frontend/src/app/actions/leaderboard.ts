@@ -11,6 +11,7 @@ export interface LeaderboardPost {
     id: string;
     username: string;
     avatar: string;
+    isMercyActive: boolean;
   };
   comments?: Array<{
     id: string;
@@ -23,6 +24,7 @@ export interface LeaderboardPost {
       id: string;
       username: string;
       avatar: string;
+      isMercyActive: boolean;
     };
   }>;
 }

@@ -31,6 +31,9 @@ export default defineConfig({
       command: 'pnpm --filter frontend dev',
       port: 3000,
       reuseExistingServer: true,
+      env: {
+        JWT_SECRET: 'this-is-a-very-secret-key-12345',
+      }
     }
   ]
 });

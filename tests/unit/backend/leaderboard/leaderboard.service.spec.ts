@@ -123,7 +123,8 @@ describe('LeaderboardService', () => {
         {
           id: 'post-1',
           title: 'Post 1',
-          content: 'Hello world.', // score: 2 * 5 - 50 = -40
+          content: 'Hello world.',
+          wastedCalories: -40,
           createdAt: new Date(),
           updatedAt: new Date(),
           author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
@@ -131,7 +132,8 @@ describe('LeaderboardService', () => {
         {
           id: 'post-2',
           title: 'Post 2',
-          content: 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.', // score: 245
+          content: 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.',
+          wastedCalories: 245,
           createdAt: new Date(),
           updatedAt: new Date(),
           author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },
@@ -139,7 +141,8 @@ describe('LeaderboardService', () => {
         {
           id: 'post-3',
           title: 'Post 3',
-          content: 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.', // score: 55
+          content: 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.',
+          wastedCalories: 55,
           createdAt: new Date(),
           updatedAt: new Date(),
           author: { id: 'user-3', username: 'charlie', avatar: 'avatar3' },
@@ -174,7 +177,8 @@ describe('LeaderboardService', () => {
         {
           id: 'post-older',
           title: 'Older Post',
-          content: 'Hello world.', // score: -40
+          content: 'Hello world.',
+          wastedCalories: -40,
           createdAt: new Date(now.getTime() - 10000), // Older
           updatedAt: new Date(),
           author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
@@ -182,7 +186,8 @@ describe('LeaderboardService', () => {
         {
           id: 'post-newer',
           title: 'Newer Post',
-          content: 'Hello world.', // score: -40
+          content: 'Hello world.',
+          wastedCalories: -40,
           createdAt: now, // Newer
           updatedAt: new Date(),
           author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },

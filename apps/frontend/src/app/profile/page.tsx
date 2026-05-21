@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import styles from './profile.module.css';
 import { actionGetMe, actionUpdateProfile, actionLogout } from '../actions/auth';
 import { useAuthStore } from '../../core/store/useAuthStore';
+import { useMercyStore } from '../../core/store/useMercyStore';
+import MercyActivationModal from '../../domains/anti-ux/components/MercyActivationModal';
 
 const AVATARS = [
   { id: 'avatar_clown', emoji: '🤡', label: 'Clown' },
@@ -29,11 +32,16 @@ export default function ProfilePage() {
   const setUser = useAuthStore((state) => state.setUser);
   const logoutStore = useAuthStore((state) => state.logout);
 
+  const failures = useMercyStore((state) => state.failures);
+  const mercyActive = useMercyStore((state) => state.isMercyActive);
+  const setMercyActive = useMercyStore((state) => state.setMercyActive);
+
   const [username, setUsername] = useState('');
   const [avatar, setAvatar] = useState('default_avatar');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isTogglingMercy, setIsTogglingMercy] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -43,6 +51,10 @@ export default function ProfilePage() {
           setUser(response.data);
           setUsername(response.data.username);
           setAvatar(response.data.avatar || 'default_avatar');
+          useMercyStore.getState().setMercyState(
+            response.data.mercyFailures ?? 0,
+            response.data.isMercyActive ?? false
+          );
         } else {
           router.push('/auth');
         }
@@ -50,6 +62,10 @@ export default function ProfilePage() {
     } else {
       setUsername(user.username);
       setAvatar(user.avatar || 'default_avatar');
+      useMercyStore.getState().setMercyState(
+        user.mercyFailures ?? 0,
+        user.isMercyActive ?? false
+      );
     }
   }, [user, setUser, router]);
 
@@ -103,7 +119,9 @@ export default function ProfilePage() {
           <div className={styles.avatarDisplay}>
             {AVATAR_MAP[avatar] || '👤'}
           </div>
-          <h1 className={styles.title}>{user.username}</h1>
+          <h1 className={styles.title}>
+            {user.username} {mercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '6px' }}>👶</span>}
+          </h1>
         </div>
 
         <div className={styles.statsGrid}>
@@ -116,6 +134,10 @@ export default function ProfilePage() {
             <div className={styles.statVal}>{user.logicViolations}</div>
           </div>
         </div>
+
+        <Link href="/sabotage-store" className={styles.storeButton} data-testid="profile-sabotage-store">
+          😈 Go to Sabotage Store
+        </Link>
 
         {success && <div className={styles.successMessage}>{success}</div>}
         {error && <div className={styles.errorMessage}>{error}</div>}
@@ -155,6 +177,35 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {failures >= 10 && (
+            <div className={styles.mercySection}>
+              <h3 className={styles.mercyTitle}>Toddler Settings</h3>
+              <div className={styles.toggleRow}>
+                <label htmlFor="mercy-mode-toggle" className={styles.toggleLabel}>
+                  👶 Mercy Mode (Toddler Mode) {isTogglingMercy && <span className={styles.loadingText}>(Syncing...)</span>}
+                </label>
+                <input
+                  id="mercy-mode-toggle"
+                  type="checkbox"
+                  checked={mercyActive}
+                  onChange={async (e) => {
+                    if (isTogglingMercy) return;
+                    setIsTogglingMercy(true);
+                    try {
+                      await setMercyActive(e.target.checked);
+                    } finally {
+                      setIsTogglingMercy(false);
+                    }
+                  }}
+                  className={styles.toggleInput}
+                />
+              </div>
+              <p className={styles.toggleHint}>
+                Disables evasive UI elements and sponsored CAPTCHAs so you can navigate without crying.
+              </p>
+            </div>
+          )}
+
           <div className={styles.actions}>
             <button
               type="submit"
@@ -174,6 +225,7 @@ export default function ProfilePage() {
           </div>
         </form>
       </div>
+      <MercyActivationModal />
     </div>
   );
 }

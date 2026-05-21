@@ -2,7 +2,7 @@ import { Injectable, Inject, NotFoundException, BadRequestException } from '@nes
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { LeaderboardService, calculateScoreHelper } from '../leaderboard/leaderboard.service';
 
 @Injectable()
@@ -125,5 +125,89 @@ export class PostsService {
       success: true,
       data: newComment,
     };
+  }
+
+  async vote(userId: string, targetId: string, targetType: 'post' | 'comment') {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(targetId)) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: 'Invalid targetId format. Must be a valid UUID.' },
+      });
+    }
+
+    if (targetType === 'post') {
+      const [post] = await this.db
+        .select()
+        .from(schema.posts)
+        .where(eq(schema.posts.id, targetId));
+
+      if (!post) {
+        throw new NotFoundException({
+          success: false,
+          error: { message: 'Post not found.' },
+        });
+      }
+
+      if (post.authorId === userId) {
+        throw new BadRequestException({
+          success: false,
+          error: { message: 'You cannot vote on your own post.' },
+        });
+      }
+
+      const [updatedPost] = await this.db
+        .update(schema.posts)
+        .set({ wastedCalories: sql`${schema.posts.wastedCalories} + 50` })
+        .where(eq(schema.posts.id, targetId))
+        .returning();
+
+      try {
+        await this.leaderboardService.broadcastUpdate();
+      } catch (e) {
+        console.error('Failed to broadcast leaderboard update after post vote:', e);
+      }
+
+      return {
+        success: true,
+        data: updatedPost,
+      };
+    } else {
+      const [comment] = await this.db
+        .select()
+        .from(schema.comments)
+        .where(eq(schema.comments.id, targetId));
+
+      if (!comment) {
+        throw new NotFoundException({
+          success: false,
+          error: { message: 'Comment not found.' },
+        });
+      }
+
+      if (comment.authorId === userId) {
+        throw new BadRequestException({
+          success: false,
+          error: { message: 'You cannot vote on your own comment.' },
+        });
+      }
+
+      const [updatedComment] = await this.db
+        .update(schema.comments)
+        .set({ wastedCalories: sql`${schema.comments.wastedCalories} + 50` })
+        .where(eq(schema.comments.id, targetId))
+        .returning();
+
+      try {
+        await this.leaderboardService.broadcastUpdate();
+      } catch (e) {
+        console.error('Failed to broadcast leaderboard update after comment vote:', e);
+      }
+
+      return {
+        success: true,
+        data: updatedComment,
+      };
+    }
   }
 }

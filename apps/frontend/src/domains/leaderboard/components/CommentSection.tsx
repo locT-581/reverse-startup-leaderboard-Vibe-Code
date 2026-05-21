@@ -7,6 +7,8 @@ import { LeaderboardPost } from '../../../app/actions/leaderboard';
 import { UserProfile } from '../../../app/actions/auth';
 import { actionCreateComment } from '../../../app/actions/posts';
 import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
+import EvasiveButton from '../../anti-ux/components/EvasiveButton';
+import { useMercyStore } from '../../../core/store/useMercyStore';
 import styles from './CommentSection.module.css';
 
 const AVATAR_MAP: Record<string, string> = {
@@ -24,6 +26,7 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ post, currentUser }: CommentSectionProps) {
+  const mercyActive = useMercyStore((state) => state.isMercyActive);
   const [commentText, setCommentText] = useState('');
   const [hasError, setHasError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +39,11 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
     e.preventDefault();
     if (hasError || !commentText.trim()) return;
 
-    setIsCaptchaOpen(true);
+    if (mercyActive) {
+      handleCaptchaSuccess();
+    } else {
+      setIsCaptchaOpen(true);
+    }
   };
 
   const handleCaptchaSuccess = async () => {
@@ -74,8 +81,16 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
               </span>
               <div className={styles.commentBody}>
                 <div className={styles.commentMeta}>
-                  <span className={styles.commentAuthor}>{comment.author.username}</span>
-                  <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>
+                  <span className={styles.commentAuthor}>
+                    {comment.author.username}
+                    {comment.author.isMercyActive && (
+                      <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
+                    )}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>
+                    <EvasiveButton targetId={comment.id} targetType="comment" />
+                  </div>
                 </div>
                 <p className={styles.commentText}>{comment.content}</p>
               </div>
@@ -117,6 +132,7 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
             isOpen={isCaptchaOpen}
             onClose={() => setIsCaptchaOpen(false)}
             onSuccess={handleCaptchaSuccess}
+            bypass={mercyActive}
           />
         </>
       ) : (

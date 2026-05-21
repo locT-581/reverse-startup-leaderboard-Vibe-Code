@@ -15,6 +15,13 @@
       "when": 1779290076023,
       "tag": "0001_hard_boomerang",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779358042534,
+      "tag": "0002_typical_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }
