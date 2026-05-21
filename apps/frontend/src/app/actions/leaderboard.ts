@@ -12,6 +12,19 @@ export interface LeaderboardPost {
     username: string;
     avatar: string;
   };
+  comments?: Array<{
+    id: string;
+    postId: string;
+    content: string;
+    wastedCalories: number;
+    createdAt: string;
+    updatedAt: string;
+    author: {
+      id: string;
+      username: string;
+      avatar: string;
+    };
+  }>;
 }
 
 export type ActionResponse<T> = {

@@ -4,6 +4,8 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { actionGetLeaderboard, LeaderboardPost } from '../../../app/actions/leaderboard';
 import { socket } from '../../../core/api/socket.client';
 import GoldenRaspberryBadge from './GoldenRaspberryBadge';
+import CommentSection from './CommentSection';
+import { useAuthStore } from '../../../core/store/useAuthStore';
 import styles from './LeaderboardGrid.module.css';
 
 const AVATAR_MAP: Record<string, string> = {
@@ -18,7 +20,9 @@ const AVATAR_MAP: Record<string, string> = {
 export default function LeaderboardGrid() {
   const [posts, setPosts] = useState<LeaderboardPost[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const currentUser = useAuthStore((state) => state.user);
 
   useEffect(() => {
     // 1. Fetch initial leaderboard data
@@ -87,31 +91,52 @@ export default function LeaderboardGrid() {
       <div className={styles.postsList}>
         {posts.map((post, index) => {
           const isFirst = index === 0;
+          const isExpanded = expandedPostId === post.id;
           return (
-            <div key={post.id} className={`${styles.postRow} ${isFirst ? styles.firstPlace : ''}`}>
-              <div className={styles.colRank}>
-                <span className={styles.rankBadge}>{index + 1}</span>
-              </div>
-              <div className={styles.colAuthor}>
-                <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
-                  {AVATAR_MAP[post.author.avatar] || '👤'}
-                </span>
-                <span className={styles.authorName}>{post.author.username}</span>
-              </div>
-              <div className={styles.colTitle}>
-                <div className={styles.postTitleText}>{post.title}</div>
-                <p className={styles.postSnippet}>{post.content}</p>
-              </div>
-              <div className={styles.colScore}>
-                <div className={styles.scoreContainer}>
-                  <span className={styles.scoreValue}>{post.wastedCalories} kcal</span>
-                  {isFirst && (
-                    <div className={styles.badgeWrapper}>
-                      <GoldenRaspberryBadge />
-                    </div>
-                  )}
+            <div
+              key={post.id}
+              className={`${styles.postRowWrapper} ${isFirst ? styles.firstPlace : ''}`}
+            >
+              <div
+                className={styles.postRow}
+                onClick={() => setExpandedPostId(isExpanded ? null : post.id)}
+                role="button"
+                aria-expanded={isExpanded}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setExpandedPostId(isExpanded ? null : post.id);
+                  }
+                }}
+              >
+                <div className={styles.colRank}>
+                  <span className={styles.rankBadge}>{index + 1}</span>
+                </div>
+                <div className={styles.colAuthor}>
+                  <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
+                    {AVATAR_MAP[post.author.avatar] || '👤'}
+                  </span>
+                  <span className={styles.authorName}>{post.author.username}</span>
+                </div>
+                <div className={styles.colTitle}>
+                  <div className={styles.postTitleText}>{post.title}</div>
+                  <p className={styles.postSnippet}>{post.content}</p>
+                </div>
+                <div className={styles.colScore}>
+                  <div className={styles.scoreContainer}>
+                    <span className={styles.scoreValue}>{post.wastedCalories} kcal</span>
+                    {isFirst && (
+                      <div className={styles.badgeWrapper}>
+                        <GoldenRaspberryBadge />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+              {isExpanded && (
+                <CommentSection post={post} currentUser={currentUser} />
+              )}
             </div>
           );
         })}

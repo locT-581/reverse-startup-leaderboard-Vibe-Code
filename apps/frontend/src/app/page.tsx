@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useTransition } from 'react';
+import React, { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import LeaderboardGrid from '../domains/leaderboard/components/LeaderboardGrid';
+import CreatePostModal from '../domains/leaderboard/components/CreatePostModal';
 import { useAuthStore } from '../core/store/useAuthStore';
 import { actionGetMe } from './actions/auth';
 import styles from './page.module.css';
@@ -11,6 +12,7 @@ export default function HomePage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const [, startTransition] = useTransition();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     // Check session on mount to see if user is authenticated
@@ -52,6 +54,26 @@ export default function HomePage() {
           </p>
         </section>
 
+        <section className={styles.formSection}>
+          {user ? (
+            <button
+              className={styles.proposeBtn}
+              onClick={() => setIsModalOpen(true)}
+            >
+              💡 Propose a Paradigm
+            </button>
+          ) : (
+            <div className={styles.unauthCard}>
+              <p className={styles.unauthText}>
+                Want to share your own overengineered masterpiece and log some wasted calories?
+              </p>
+              <Link href="/auth" className={styles.authLink}>
+                Sign In to Propose a Paradigm
+              </Link>
+            </div>
+          )}
+        </section>
+
         <section className={styles.leaderboardSection}>
           <LeaderboardGrid />
         </section>
@@ -66,6 +88,8 @@ export default function HomePage() {
           .
         </p>
       </footer>
+
+      <CreatePostModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

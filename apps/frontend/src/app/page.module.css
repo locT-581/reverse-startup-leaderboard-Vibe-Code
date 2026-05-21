@@ -133,6 +133,78 @@
   text-decoration: underline;
 }
 
+.formSection {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
+.authContainer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.proposeBtn {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding: 1rem 2.5rem;
+  border-radius: 12px;
+  cursor: pointer;
+  background: linear-gradient(135deg, hsl(220, 90%, 50%) 0%, #1e40af 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 6px 15px rgba(59, 130, 246, 0.25);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.proposeBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+}
+
+.unauthCard {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  padding: 2.5rem;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.unauthText {
+  color: #475569;
+  font-size: 1.05rem;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.5;
+}
+
+.authLink {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.75rem 1.75rem;
+  background: hsl(220, 90%, 50%);
+  color: #ffffff;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.15);
+  transition: all 0.2s ease;
+}
+
+.authLink:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 640px) {
   .header {
     padding: 1rem;

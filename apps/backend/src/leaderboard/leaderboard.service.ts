@@ -2,7 +2,7 @@ import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { DRIZZLE } from '../database/database.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { LeaderboardGateway } from './leaderboard.gateway';
 
 export interface LeaderboardPost {
@@ -90,7 +90,7 @@ export class LeaderboardService {
     return calculateScoreHelper(content);
   }
 
-  async getLeaderboard(): Promise<{ success: boolean; data: LeaderboardPost[] }> {
+  async getLeaderboard(): Promise<{ success: boolean; data: any[] }> {
     const rawPosts = await this.db
       .select({
         id: schema.posts.id,
@@ -107,14 +107,62 @@ export class LeaderboardService {
       .from(schema.posts)
       .innerJoin(schema.users, eq(schema.posts.authorId, schema.users.id));
 
-    // Calculate score dynamically to ensure strict correctness
-    const postsWithScores = rawPosts.map((post) => ({
-      ...post,
-      wastedCalories: this.calculateScore(post.content),
-    }));
+    const postIds = rawPosts.map((p) => p.id);
+    let rawComments: any[] = [];
+    if (postIds.length > 0) {
+      const commentsQuery = this.db
+        .select({
+          id: schema.comments.id,
+          postId: schema.comments.postId,
+          content: schema.comments.content,
+          wastedCalories: schema.comments.wastedCalories,
+          createdAt: schema.comments.createdAt,
+          updatedAt: schema.comments.updatedAt,
+          author: {
+            id: schema.users.id,
+            username: schema.users.username,
+            avatar: schema.users.avatar,
+          },
+        })
+        .from(schema.comments)
+        .innerJoin(schema.users, eq(schema.comments.authorId, schema.users.id));
+
+      if (commentsQuery && typeof commentsQuery.where === 'function') {
+        rawComments = await commentsQuery.where(inArray(schema.comments.postId, postIds));
+      } else {
+        rawComments = [];
+      }
+    }
+
+    const postsWithComments = rawPosts.map((post) => {
+      const commentsForPost = rawComments
+        .filter((c) => c.postId === post.id)
+        .map((c) => ({
+          id: c.id,
+          postId: c.postId,
+          content: c.content,
+          wastedCalories: c.wastedCalories,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          author: c.author,
+        }));
+
+      // Sort comments by createdAt ascending
+      commentsForPost.sort((a, b) => {
+        const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+        const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+        return aTime - bTime;
+      });
+
+      return {
+        ...post,
+        wastedCalories: this.calculateScore(post.content),
+        comments: commentsForPost,
+      };
+    });
 
     // Sort descending by score, and sub-sort by createdAt descending for stability
-    postsWithScores.sort((a, b) => {
+    postsWithComments.sort((a, b) => {
       if (b.wastedCalories !== a.wastedCalories) {
         return b.wastedCalories - a.wastedCalories;
       }
@@ -125,7 +173,7 @@ export class LeaderboardService {
 
     return {
       success: true,
-      data: postsWithScores,
+      data: postsWithComments,
     };
   }
 }

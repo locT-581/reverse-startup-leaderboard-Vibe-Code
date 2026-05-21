@@ -5,12 +5,12 @@ epic_num: 1
 story_num: 4
 epic_title: The Foundation - Identity & Leaderboard
 story_title: Real-time Leaderboard View & Badges
-status: review
+status: done
 ---
 
 # Story 1.4: Real-time Leaderboard View & Badges
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
