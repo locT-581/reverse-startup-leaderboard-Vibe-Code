@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import HostileInput from './HostileInput';
+import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
 import { actionCreatePost } from '../../../app/actions/posts';
 import styles from './CreatePostModal.module.css';
 
@@ -18,6 +19,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +42,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       setContentError(false);
       setSubmitError(null);
       setSubmitSuccess(false);
+      setIsCaptchaOpen(false);
     } else {
       // Focus modal when it opens for accessibility
       modalRef.current?.focus();
@@ -48,10 +51,15 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (titleError || contentError || !title.trim() || !content.trim()) return;
 
+    // Show the captcha modal instead of submitting directly
+    setIsCaptchaOpen(true);
+  };
+
+  const handleCaptchaSuccess = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(false);
@@ -66,7 +74,9 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         onClose();
       }, 1500);
     } else {
-      setSubmitError(res.error?.message || 'Failed to propose paradigm.');
+      const errMsg = res.error?.message || 'Failed to propose paradigm.';
+      setSubmitError(errMsg);
+      throw new Error(errMsg);
     }
   };
 
@@ -155,6 +165,11 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
           </form>
         </div>
       </div>
+      <AdCaptchaModal
+        isOpen={isCaptchaOpen}
+        onClose={() => setIsCaptchaOpen(false)}
+        onSuccess={handleCaptchaSuccess}
+      />
     </div>
   );
 }

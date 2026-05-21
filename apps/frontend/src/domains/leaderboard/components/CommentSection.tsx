@@ -6,6 +6,7 @@ import HostileInput from './HostileInput';
 import { LeaderboardPost } from '../../../app/actions/leaderboard';
 import { UserProfile } from '../../../app/actions/auth';
 import { actionCreateComment } from '../../../app/actions/posts';
+import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
 import styles from './CommentSection.module.css';
 
 const AVATAR_MAP: Record<string, string> = {
@@ -27,13 +28,18 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
   const [hasError, setHasError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
 
   const comments = post.comments || [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (hasError || !commentText.trim()) return;
 
+    setIsCaptchaOpen(true);
+  };
+
+  const handleCaptchaSuccess = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -45,7 +51,9 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
       setCommentText('');
       setHasError(false);
     } else {
-      setSubmitError(res.error?.message || 'Failed to submit solution.');
+      const errMsg = res.error?.message || 'Failed to submit solution.';
+      setSubmitError(errMsg);
+      throw new Error(errMsg);
     }
   };
 
@@ -77,33 +85,40 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
       </div>
 
       {currentUser ? (
-        <form onSubmit={handleSubmit} className={styles.newCommentForm}>
-          <h4 className={styles.formTitle}>Propose an Overengineered Solution</h4>
-          <HostileInput
-            type="textarea"
-            id={`comment-input-${post.id}`}
-            value={commentText}
-            onChange={setCommentText}
-            placeholder="Type your convoluted solution here... It must be strictly longer than the original post."
-            validationType="comment"
-            originalPostLength={post.content.length}
-            onErrorChange={setHasError}
-            label="Solution Comment Content"
-            hideLabelVisually={true}
+        <>
+          <form onSubmit={handleSubmit} className={styles.newCommentForm}>
+            <h4 className={styles.formTitle}>Propose an Overengineered Solution</h4>
+            <HostileInput
+              type="textarea"
+              id={`comment-input-${post.id}`}
+              value={commentText}
+              onChange={setCommentText}
+              placeholder="Type your convoluted solution here... It must be strictly longer than the original post."
+              validationType="comment"
+              originalPostLength={post.content.length}
+              onErrorChange={setHasError}
+              label="Solution Comment Content"
+              hideLabelVisually={true}
+            />
+            {submitError && (
+              <div className={styles.submitError} role="alert">
+                ⚠️ {submitError}
+              </div>
+            )}
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              disabled={isButtonDisabled}
+            >
+              {isSubmitting ? 'Submitting Solution...' : 'Submit Solution'}
+            </button>
+          </form>
+          <AdCaptchaModal
+            isOpen={isCaptchaOpen}
+            onClose={() => setIsCaptchaOpen(false)}
+            onSuccess={handleCaptchaSuccess}
           />
-          {submitError && (
-            <div className={styles.submitError} role="alert">
-              ⚠️ {submitError}
-            </div>
-          )}
-          <button
-            type="submit"
-            className={styles.submitBtn}
-            disabled={isButtonDisabled}
-          >
-            {isSubmitting ? 'Submitting Solution...' : 'Submit Solution'}
-          </button>
-        </form>
+        </>
       ) : (
         <div className={styles.authPrompt}>
           Want to propose a solution?{' '}

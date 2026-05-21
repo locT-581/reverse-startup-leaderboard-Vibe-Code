@@ -12,3 +12,8 @@
 
 - Missing transition animations for first-place badge status change [apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx:102] — When the leaderboard receives a WebSocket update that re-orders the rank, the Golden Raspberry badge immediately shifts position without transition styling or announcement.
 
+## Deferred from: code review of 2-2-the-ad-captcha-challenge.md (2026-05-21)
+
+- Persistent error message after Skip Ad click [apps/frontend/src/domains/anti-ux/components/AdCaptchaModal.tsx:436] — When clicking the "Skip Ad" button, a "Skip failed!" message is shown. This error remains visible even when the user types a matching string, until the form is submitted.
+
+

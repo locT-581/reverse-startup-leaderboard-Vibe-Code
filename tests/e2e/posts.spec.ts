@@ -56,6 +56,14 @@ test.describe('Posts & Comments E2E Flow', () => {
 
     // 6. Submit Post
     await page.click('button:has-text("Propose Paradigm")');
+
+    // Solve Ad Captcha
+    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    const postAdText = await page.locator('#sponsor-ad-text').textContent();
+    expect(postAdText).not.toBeNull();
+    await page.fill('#ad-verification-input', postAdText!);
+    await page.click('button:has-text("Verify & Submit")');
+
     await expect(page.locator('text=Paradigm successfully proposed!')).toBeVisible();
 
     // Wait for the modal to close and unmount
@@ -83,6 +91,13 @@ test.describe('Posts & Comments E2E Flow', () => {
 
     // 10. Submit Comment
     await page.click('button:has-text("Submit Solution")');
+
+    // Solve Ad Captcha for Comment
+    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    const commentAdText = await page.locator('#sponsor-ad-text').textContent();
+    expect(commentAdText).not.toBeNull();
+    await page.fill('#ad-verification-input', commentAdText!);
+    await page.click('button:has-text("Verify & Submit")');
 
     // 11. Verify comment is displayed inline
     await expect(page.locator(`p:has-text("${validComment}")`)).toBeVisible();
