@@ -1,0 +1,607 @@
+diff --git a/apps/backend/db/schema.ts b/apps/backend/db/schema.ts
+index 630e94e..2b63e25 100644
+--- a/apps/backend/db/schema.ts
++++ b/apps/backend/db/schema.ts
+@@ -1,4 +1,5 @@
+ import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
++import { relations } from "drizzle-orm";
+ 
+ export const users = pgTable("users", {
+   id: uuid("id").defaultRandom().primaryKey(),
+@@ -11,3 +12,26 @@ export const users = pgTable("users", {
+   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+ });
+ 
++export const posts = pgTable("posts", {
++  id: uuid("id").defaultRandom().primaryKey(),
++  title: text("title").notNull(),
++  content: text("content").notNull(),
++  wastedCalories: integer("wasted_calories").default(0).notNull(),
++  authorId: uuid("author_id")
++    .references(() => users.id, { onDelete: "cascade" })
++    .notNull(),
++  createdAt: timestamp("created_at").defaultNow().notNull(),
++  updatedAt: timestamp("updated_at").defaultNow().notNull(),
++});
++
++export const usersRelations = relations(users, ({ many }) => ({
++  posts: many(posts),
++}));
++
++export const postsRelations = relations(posts, ({ one }) => ({
++  author: one(users, {
++    fields: [posts.authorId],
++    references: [users.id],
++  }),
++}));
++
+diff --git a/apps/backend/package.json b/apps/backend/package.json
+index b1effaf..b9c6b34 100644
+--- a/apps/backend/package.json
++++ b/apps/backend/package.json
+@@ -6,7 +6,8 @@
+     "build": "nest build",
+     "start": "nest start",
+     "start:dev": "nest start --watch",
+-    "test": "jest"
++    "test": "jest",
++    "db:seed": "node --env-file=.env -r ts-node/register db/seed.ts"
+   },
+   "dependencies": {
+     "@nestjs/common": "^10.0.0",
+@@ -31,6 +32,7 @@
+     "drizzle-kit": "^0.30.4",
+     "jest": "^29.7.0",
+     "ts-jest": "^29.1.2",
++    "ts-node": "^10.9.2",
+     "typescript": "^5.1.3"
+   },
+   "jest": {
+diff --git a/apps/backend/src/app.module.ts b/apps/backend/src/app.module.ts
+index 5a9bdcb..fc08cff 100644
+--- a/apps/backend/src/app.module.ts
++++ b/apps/backend/src/app.module.ts
+@@ -1,11 +1,12 @@
+ import { Module } from '@nestjs/common';
+ import { DatabaseModule } from './database/database.module';
+ import { AuthModule } from './auth/auth.module';
++import { LeaderboardModule } from './leaderboard/leaderboard.module';
+ 
+ @Module({
+-  imports: [DatabaseModule, AuthModule],
++  imports: [DatabaseModule, AuthModule, LeaderboardModule],
+   controllers: [],
+   providers: [],
+ })
+-export class AppModule {}
++export class AppModule { }
+ 
+diff --git a/apps/backend/db/seed.ts b/apps/backend/db/seed.ts
+new file mode 100644
+index 0000000..300252d
+--- /dev/null
++++ b/apps/backend/db/seed.ts
+@@ -0,0 +1,142 @@
++import { db } from './index';
++import { users, posts } from './schema';
++import * as bcrypt from 'bcrypt';
++
++async function main() {
++  console.log('Seeding database...');
++
++  // Clean up existing data
++  await db.delete(posts);
++  await db.delete(users);
++
++  // Hash passwords
++  const passwordHash = await bcrypt.hash('password123', 10);
++
++  // Create mock users
++  const [user1, user2, user3] = await db.insert(users).values([
++    {
++      username: 'alice',
++      passwordHash,
++      avatar: 'avatar_developer',
++      wastedCalories: 0,
++      logicViolations: 0,
++    },
++    {
++      username: 'bob',
++      passwordHash,
++      avatar: 'avatar_designer',
++      wastedCalories: 0,
++      logicViolations: 0,
++    },
++    {
++      username: 'charlie',
++      passwordHash,
++      avatar: 'avatar_manager',
++      wastedCalories: 0,
++      logicViolations: 0,
++    },
++  ]).returning();
++
++  console.log('Created mock users.');
++
++  // Helper function to calculate score matching the service logic
++  const calculateScore = (content: string): number => {
++    let score = 0;
++
++    // 1. Word Count: +5 per word (whitespace-separated)
++    const words = content.trim().split(/\s+/).filter(w => w.length > 0);
++    score += words.length * 5;
++
++    // 2. Capitalization Scream: if > 30% of alphabetic characters are uppercase, +50
++    const alphabeticChars = content.replace(/[^a-zA-Z]/g, '');
++    if (alphabeticChars.length > 0) {
++      const uppercaseChars = content.replace(/[^A-Z]/g, '');
++      const ratio = uppercaseChars.length / alphabeticChars.length;
++      if (ratio > 0.3) {
++        score += 50;
++      }
++    }
++
++    // 3. Over-engineering Penalty: if contains markdown code blocks (```), +100
++    if (content.includes('```')) {
++      score += 100;
++    }
++
++    // 4. Length Modifier: > 1000 chars +150; < 100 chars -50
++    const len = content.length;
++    if (len > 1000) {
++      score += 150;
++    } else if (len < 100) {
++      score -= 50;
++    }
++
++    // 5. Frustration Punctuation: +5 per occurrence of !, ?, or ... (capped at +50)
++    let frustrationCount = 0;
++    let tempContent = content;
++
++    // Count and remove ...
++    const dotRegex = /\.\.\./g;
++    const dotsMatch = tempContent.match(dotRegex);
++    if (dotsMatch) {
++      frustrationCount += dotsMatch.length;
++      tempContent = tempContent.replace(dotRegex, '');
++    }
++
++    // Count and remove ! and ?
++    const puncRegex = /[!?]/g;
++    const puncsMatch = tempContent.match(puncRegex);
++    if (puncsMatch) {
++      frustrationCount += puncsMatch.length;
++    }
++
++    score += Math.min(frustrationCount, 10) * 5;
++
++    return score;
++  };
++
++  const postContents = [
++    {
++      title: 'Quick Update',
++      content: 'We are pivoting. No questions asked. Just trust the process!', // Length: 60 (< 100), Words: 10, Scream: No, Code: No, Frustration: ! (1) => 50 - 50 + 5 = 5
++      authorId: user1.id,
++    },
++    {
++      title: 'Clean Architecture implementation details',
++      content: 'Check out our clean architecture:\n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean and scalable.', // Length: 120, Words: 18, Scream: No, Code: Yes (+100) => 90 + 100 = 190
++      authorId: user2.id,
++    },
++    {
++      title: 'I AM FREAKING OUT NOW',
++      content: 'WHY IS THE DEPLOYMENT FAILING AGAIN?! THIS IS TOTALLY UNACCEPTABLE! OUR CLIENTS ARE LEAVING! HELP...', // Length: 97 (<100), Words: 15, Scream: Yes (+50), Code: No, Frustration: ?, !, !, !, ... (5 occurrences) => 75 + 50 - 50 + 25 = 100
++      authorId: user3.id,
++    },
++    {
++      title: 'The Ultimate Guide to Synergy',
++      content: 'We need to leverage our synergy to align our core competencies and optimize our bandwidth. By scaling our paradigms and disruptive thinking, we will establish a high-performing ecosystem. Let\'s deep dive into the KPIs and OKRs that will drive our pivot. We must ensure that our deliverables are decoupled and cloud-native. This is the only way to monetize our microservices and achieve a paradigm shift. We need to run a sprint to address the low-hanging fruits. This is a game-changer! Our roadmap must be agile and customer-centric. Let\'s touch base next week to align on the action items. We should take this offline and circle back. At the end of the day, it is about the bottom line and bandwidth. We need to think outside the box and push the envelope. This is a win-win situation for all stakeholders. Let\'s hit the ground running and make it happen! Can you double check the server logs? I need to make sure we are not dropping packets. This is critical for our MVP launch. We cannot afford any downtime at this stage! Let\'s get to work now.', // Length: 1026 (>1000), Words: 181, Scream: No, Code: No, Frustration: !, ?, ! (3 occurrences) => 905 + 150 + 15 = 1070
++      authorId: user1.id,
++    },
++    {
++      title: 'MICROSERVICE ARCHITECTURE SHAKEUP',
++      content: 'HELLO TEAM, WE ARE REFACTORING EVERYTHING TO MICROSERVICES TODAY!!!\n\nHere is the new config:\n```yaml\nservices:\n  auth:\n    image: auth-service:latest\n  leaderboard:\n    image: leaderboard:latest\n```\n\nWE MUST DEPLOY THIS RIGHT NOW TO PREVENT DISASTER! DOES ANYONE HAVE QUESTIONS?! IF NOT, JUST MERGE IT AND RUN! DO NOT DELAY OR WE ARE DOOMED!!!', // Length: 318, Words: 53, Scream: Yes (+50), Code: Yes (+100), Frustration: ! (8), ? (2) = 10 occurrences => 265 + 50 + 100 + 50 = 465
++      authorId: user2.id,
++    },
++  ];
++
++  for (const postData of postContents) {
++    const wastedCalories = calculateScore(postData.content);
++    await db.insert(posts).values({
++      title: postData.title,
++      content: postData.content,
++      wastedCalories,
++      authorId: postData.authorId,
++    });
++  }
++
++  console.log('Database seeded successfully!');
++  process.exit(0);
++}
++
++main().catch((err) => {
++  console.error('Seed failed:', err);
++  process.exit(1);
++});
+diff --git a/apps/backend/src/leaderboard/leaderboard.service.ts b/apps/backend/src/leaderboard/leaderboard.service.ts
+new file mode 100644
+index 0000000..066152d
+--- /dev/null
++++ b/apps/backend/src/leaderboard/leaderboard.service.ts
+@@ -0,0 +1,112 @@
++import { Injectable, Inject } from '@nestjs/common';
++import { DRIZZLE } from '../database/database.module';
++import { NodePgDatabase } from 'drizzle-orm/node-postgres';
++import * as schema from '../../db/schema';
++import { eq } from 'drizzle-orm';
++
++export interface LeaderboardPost {
++  id: string;
++  title: string;
++  content: string;
++  wastedCalories: number;
++  createdAt: Date;
++  updatedAt: Date;
++  author: {
++    id: string;
++    username: string;
++    avatar: string;
++  };
++}
++
++@Injectable()
++export class LeaderboardService {
++  constructor(
++    @Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>,
++  ) { }
++
++  calculateScore(content: string): number {
++    let score = 0;
++
++    // 1. Word Count: +5 per word (whitespace-separated)
++    const words = content.trim().split(/\s+/).filter((w) => w.length > 0);
++    score += words.length * 5;
++
++    // 2. Capitalization Scream: if > 30% of alphabetic characters are uppercase, +50
++    const alphabeticChars = content.replace(/[^a-zA-Z]/g, '');
++    if (alphabeticChars.length > 0) {
++      const uppercaseChars = content.replace(/[^A-Z]/g, '');
++      const ratio = uppercaseChars.length / alphabeticChars.length;
++      if (ratio > 0.3) {
++        score += 50;
++      }
++    }
++
++    // 3. Over-engineering Penalty: if contains markdown code blocks (```), +100
++    if (content.includes('```')) {
++      score += 100;
++    }
++
++    // 4. Length Modifier: > 1000 chars +150; < 100 chars -50
++    const len = content.length;
++    if (len > 1000) {
++      score += 150;
++    } else if (len < 100) {
++      score -= 50;
++    }
++
++    // 5. Frustration Punctuation: +5 per occurrence of !, ?, or ... (capped at +50)
++    let frustrationCount = 0;
++    let tempContent = content;
++
++    // Count and remove ...
++    const dotRegex = /\.\.\./g;
++    const dotsMatch = tempContent.match(dotRegex);
++    if (dotsMatch) {
++      frustrationCount += dotsMatch.length;
++      tempContent = tempContent.replace(dotRegex, '');
++    }
++
++    // Count and remove ! and ?
++    const puncRegex = /[!?]/g;
++    const puncsMatch = tempContent.match(puncRegex);
++    if (puncsMatch) {
++      frustrationCount += puncsMatch.length;
++    }
++
++    score += Math.min(frustrationCount, 10) * 5;
++
++    return score;
++  }
++
++  async getLeaderboard(): Promise<{ success: boolean; data: LeaderboardPost[] }> {
++    const rawPosts = await this.db
++      .select({
++        id: schema.posts.id,
++        title: schema.posts.title,
++        content: schema.posts.content,
++        createdAt: schema.posts.createdAt,
++        updatedAt: schema.posts.updatedAt,
++        author: {
++          id: schema.users.id,
++          username: schema.users.username,
++          avatar: schema.users.avatar,
++        },
++      })
++      .from(schema.posts)
++      .innerJoin(schema.users, eq(schema.posts.authorId, schema.users.id));
++
++    // Calculate score dynamically to ensure strict correctness
++    const postsWithScores = rawPosts.map((post) => ({
++      ...post,
++      wastedCalories: this.calculateScore(post.content),
++    }));
++
++    // Sort descending by score
++    postsWithScores.sort((a, b) => b.wastedCalories - a.wastedCalories);
++
++    return {
++      success: true,
++      data: postsWithScores,
++    };
++  }
++}
+diff --git a/apps/backend/src/leaderboard/leaderboard.controller.ts b/apps/backend/src/leaderboard/leaderboard.controller.ts
+new file mode 100644
+index 0000000..74b75f4
+--- /dev/null
++++ b/apps/backend/src/leaderboard/leaderboard.controller.ts
+@@ -0,0 +1,12 @@
++import { Controller, Get } from '@nestjs/common';
++import { LeaderboardService } from './leaderboard.service';
++
++@Controller('leaderboard')
++export class LeaderboardController {
++  constructor(private readonly leaderboardService: LeaderboardService) { }
++
++  @Get()
++  async getLeaderboard() {
++    return this.leaderboardService.getLeaderboard();
++  }
++}
+diff --git a/apps/backend/src/leaderboard/leaderboard.module.ts b/apps/backend/src/leaderboard/leaderboard.module.ts
+new file mode 100644
+index 0000000..8b57ef7
+--- /dev/null
++++ b/apps/backend/src/leaderboard/leaderboard.module.ts
+@@ -0,0 +1,12 @@
++import { Module } from '@nestjs/common';
++import { LeaderboardController } from './leaderboard.controller';
++import { LeaderboardService } from './leaderboard.service';
++import { DatabaseModule } from '../database/database.module';
++
++@Module({
++  imports: [DatabaseModule],
++  controllers: [LeaderboardController],
++  providers: [LeaderboardService],
++  exports: [LeaderboardService],
++})
++export class LeaderboardModule { }
+diff --git a/apps/frontend/src/app/actions/leaderboard.ts b/apps/frontend/src/app/actions/leaderboard.ts
+new file mode 100644
+index 0000000..cdbc1ae
+--- /dev/null
++++ b/apps/frontend/src/app/actions/leaderboard.ts
+@@ -0,0 +1,60 @@
++'use server';
++
++export interface LeaderboardPost {
++  id: string;
++  title: string;
++  content: string;
++  wastedCalories: number;
++  createdAt: string;
++  updatedAt: string;
++  author: {
++    id: string;
++    username: string;
++    avatar: string;
++  };
++}
++
++export type ActionResponse<T> = {
++  success: boolean;
++  data?: T;
++  error?: { message: string; code?: string };
++};
++
++const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
++
++export async function actionGetLeaderboard(): Promise<ActionResponse<LeaderboardPost[]>> {
++  try {
++    const res = await fetch(`${BACKEND_URL}/leaderboard`, {
++      method: 'GET',
++      headers: {
++        'Content-Type': 'application/json',
++      },
++      next: { revalidate: 0 }, // Ensure dynamic fetching
++    });
++
++    const data = await res.json();
++
++    if (!res.ok) {
++      return {
++        success: false,
++        error: {
++          message: data.error?.message || 'Failed to contact the leaderboard engine. The server is probably taking an unannounced coffee break.',
++          code: data.error?.code || 'BACKEND_ERROR',
++        },
++      };
++    }
++
++    return {
++      success: true,
++      data: data.data,
++    };
++  } catch (err) {
++    return {
++      success: false,
++      error: {
++        message: 'Failed to contact the leaderboard engine. The server is probably taking a coffee break.',
++        code: 'NETWORK_ERROR',
++      },
++    };
++  }
++}
+diff --git a/tests/unit/backend/leaderboard/leaderboard.service.spec.ts b/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
+new file mode 100644
+index 0000000..93e1970
+--- /dev/null
++++ b/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
+@@ -0,0 +1,155 @@
++import { Test, TestingModule } from '@nestjs/testing';
++import { LeaderboardService } from '../../../../apps/backend/src/leaderboard/leaderboard.service';
++import { DRIZZLE } from '../../../../apps/backend/src/database/database.module';
++
++describe('LeaderboardService', () => {
++  let service: LeaderboardService;
++  let dbMock: any;
++
++  beforeEach(async () => {
++    dbMock = {
++      select: jest.fn().mockReturnThis(),
++      from: jest.fn().mockReturnThis(),
++      innerJoin: jest.fn(),
++    };
++
++    const module: TestingModule = await Test.createTestingModule({
++      providers: [
++        LeaderboardService,
++        {
++          provide: DRIZZLE,
++          useValue: dbMock,
++        },
++      ],
++    }).compile();
++
++    service = module.get<LeaderboardService>(LeaderboardService);
++  });
++
++  describe('calculateScore', () => {
++    it('should calculate score for a standard post (word count only)', () => {
++      // 20 words, length = 125 (no modifier), no scream, no code, no punctuation
++      const content = 'This is a standard text post with exactly twenty words. We are writing normal sentences without any special characters here.';
++      const score = service.calculateScore(content);
++      // 20 * 5 = 100
++      expect(score).toBe(100);
++    });
++
++    it('should apply word count and less than 100 characters modifier (-50)', () => {
++      // 2 words, length = 12 (< 100 => -50)
++      const content = 'Hello world.';
++      const score = service.calculateScore(content);
++      // 2 * 5 - 50 = -40
++      expect(score).toBe(-40);
++    });
++
++    it('should apply word count and greater than 1000 characters modifier (+150)', () => {
++      // Create a string with length > 1000 containing 210 words
++      const word = 'word ';
++      const content = word.repeat(210); // 210 words, length = 1050
++      const score = service.calculateScore(content);
++      // 210 * 5 + 150 = 1050 + 150 = 1200
++      expect(score).toBe(1200);
++    });
++
++    it('should apply capitalization scream penalty (+50)', () => {
++      // 10 words, length = 60 (< 100 => -50), > 30% uppercase (100% here)
++      const content = 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.';
++      const score = service.calculateScore(content);
++      // 11 words: 'THIS', 'IS', 'A', 'SCREAMING', 'MESSAGE', 'FOR', 'ALL', 'TEAM', 'MEMBERS', 'TO', 'READ.'
++      // 11 * 5 - 50 + 50 (scream) = 55
++      expect(score).toBe(55);
++    });
++
++    it('should not apply capitalization scream penalty if <= 30% uppercase', () => {
++      // 10 words, length = 54 (< 100 => -50), few uppercase chars (only 2 out of ~45 => < 30%)
++      const content = 'This is a normal message for all team members to read.';
++      const score = service.calculateScore(content);
++      // 11 words * 5 = 55
++      // 55 - 50 = 5
++      expect(score).toBe(5);
++    });
++
++    it('should apply over-engineering code block penalty (+100)', () => {
++      const content = 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.';
++      const score = service.calculateScore(content);
++      // Length: 180 (no modifier)
++      // Words count: 29 words
++      // Score: 29 * 5 + 100 (code) = 245
++      expect(score).toBe(245);
++    });
++
++    it('should apply frustration punctuation points (+5 per occurrence, capped at +50)', () => {
++      const content = 'Why did the server crash?! Oh no! We need to check the logs... asap. Please help us fix this now because we are running out of time!';
++      const score = service.calculateScore(content);
++      // Punctuation: ?, !, !, ..., ! = 5 occurrences => +25
++      // Words: 27
++      // 27 * 5 + 25 = 160
++      expect(score).toBe(160);
++    });
++
++    it('should cap frustration punctuation points at +50', () => {
++      const content = 'FAIL!!! WHY?! OH?! NO!!! CODE!!! HELP!!! NEED BACKUP!!! NOW!!! WE ARE DOOMED!!!';
++      const score = service.calculateScore(content);
++      // Length: 81 (< 100 => -50)
++      // Scream: 100% scream => +50
++      // Punctuation: > 10 => +50
++      // Words: 12
++      // 12 * 5 - 50 + 50 + 50 = 110
++      expect(score).toBe(110);
++    });
++  });
++
++  describe('getLeaderboard', () => {
++    it('should return posts sorted descending by calculated score', async () => {
++      // Mock DB returning 3 raw posts
++      const mockRawPosts = [
++        {
++          id: 'post-1',
++          title: 'Post 1',
++          content: 'Hello world.', // score: 2 * 5 - 50 = -40
++          createdAt: new Date(),
++          updatedAt: new Date(),
++          author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
++        },
++        {
++          id: 'post-2',
++          title: 'Post 2',
++          content: 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.', // score: 245
++          createdAt: new Date(),
++          updatedAt: new Date(),
++          author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },
++        },
++        {
++          id: 'post-3',
++          title: 'Post 3',
++          content: 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.', // score: 55
++          createdAt: new Date(),
++          updatedAt: new Date(),
++          author: { id: 'user-3', username: 'charlie', avatar: 'avatar3' },
++        },
++      ];
++
++      dbMock.innerJoin.mockResolvedValue(mockRawPosts);
++
++      const result = await service.getLeaderboard();
++
++      expect(dbMock.select).toHaveBeenCalled();
++      expect(dbMock.from).toHaveBeenCalled();
++      expect(dbMock.innerJoin).toHaveBeenCalled();
++
++      expect(result.success).toBe(true);
++      expect(result.data).toHaveLength(3);
++
++      // Should be sorted: Post 2 (245) -> Post 3 (55) -> Post 1 (-40)
++      expect(result.data[0].id).toBe('post-2');
++      expect(result.data[0].wastedCalories).toBe(245);
++
++      expect(result.data[1].id).toBe('post-3');
++      expect(result.data[1].wastedCalories).toBe(55);
++
++      expect(result.data[2].id).toBe('post-1');
++      expect(result.data[2].wastedCalories).toBe(-40);
++    });
++  });
++});

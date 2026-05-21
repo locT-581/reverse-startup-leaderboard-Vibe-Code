@@ -1,0 +1,41 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #f59e0b;
+  color: #b45309;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+  animation: shine 2s infinite ease-in-out;
+}
+
+.icon {
+  font-size: 0.9rem;
+}
+
+@keyframes shine {
+
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+  }
+
+  50% {
+    filter: brightness(1.15);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    animation: none;
+  }
+}

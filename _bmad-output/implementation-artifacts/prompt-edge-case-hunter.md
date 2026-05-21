@@ -1,905 +1,1146 @@
-You are the Edge Case Hunter. Review this diff and you have read access to the project.
-Focus on finding edge cases, unhandled errors, boundary conditions, race conditions, type safety issues, and integration bugs.
-Output findings as a Markdown list.
+# Role: Edge Case Hunter (Path Tracer)
 
-<diff>
+You are a pure path tracer. Never comment on whether code is good or bad; only list missing handling.
+Scan only the diff hunks and list boundaries that are directly reachable from the changed lines and lack an explicit guard in the diff.
+Ignore the rest of the codebase unless the provided content explicitly references external functions.
+
+## Goal:
+Walk every branching path and boundary condition within scope — report only unhandled ones.
+Walk all branching paths: control flow (conditionals, loops, error handlers, early returns) and domain boundaries (where values, states, or conditions transition). Examples: missing else/default, unguarded inputs, off-by-one loops, arithmetic overflow, implicit type coercion, race conditions, timeout gaps.
+For each path: determine whether the content handles it.
+Collect only the unhandled paths as findings — discard handled ones silently.
+
+## Output Format:
+Return ONLY a valid JSON array of objects. Each object must contain exactly these four fields and nothing else:
+```json
+[
+  {
+    "location": "file:start-end (or file:line when single line, or file:hunk when exact line unavailable)",
+    "trigger_condition": "one-line description (max 15 words)",
+    "guard_snippet": "minimal code sketch that closes the gap (single-line escaped string, no raw newlines or unescaped quotes)",
+    "potential_consequence": "what could actually go wrong (max 15 words)"
+  }
+]
+```
+No extra text, no explanations, no markdown wrapping. An empty array `[]` is valid when no unhandled paths are found.
+
+## Diff Content
+```diff
 diff --git a/apps/backend/db/schema.ts b/apps/backend/db/schema.ts
-index 1d0b750..630e94e 100644
+index 630e94e..2b63e25 100644
 --- a/apps/backend/db/schema.ts
 +++ b/apps/backend/db/schema.ts
-@@ -1,3 +1,13 @@
--// Schema definitions will go here
-+import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
-+
-+export const users = pgTable("users", {
+@@ -1,4 +1,5 @@
+ import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
++import { relations } from "drizzle-orm";
+ 
+ export const users = pgTable("users", {
+   id: uuid("id").defaultRandom().primaryKey(),
+@@ -11,3 +12,26 @@ export const users = pgTable("users", {
+   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+ });
+ 
++export const posts = pgTable("posts", {
 +  id: uuid("id").defaultRandom().primaryKey(),
-+  username: text("username").notNull().unique(),
-+  passwordHash: text("password_hash").notNull(),
-+  avatar: text("avatar").default("default_avatar"),
++  title: text("title").notNull(),
++  content: text("content").notNull(),
 +  wastedCalories: integer("wasted_calories").default(0).notNull(),
-+  logicViolations: integer("logic_violations").default(0).notNull(),
++  authorId: uuid("author_id")
++    .references(() => users.id, { onDelete: "cascade" })
++    .notNull(),
 +  createdAt: timestamp("created_at").defaultNow().notNull(),
 +  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 +});
- 
--export {};
++
++export const usersRelations = relations(users, ({ many }) => ({
++  posts: many(posts),
++}));
++
++export const postsRelations = relations(posts, ({ one }) => ({
++  author: one(users, {
++    fields: [posts.authorId],
++    references: [users.id],
++  }),
++}));
++
+diff --git a/apps/backend/db/seed.ts b/apps/backend/db/seed.ts
+new file mode 100644
+index 0000000..ecf10d3
+--- /dev/null
++++ b/apps/backend/db/seed.ts
+@@ -0,0 +1,91 @@
++import { db } from './index';
++import { users, posts } from './schema';
++import * as bcrypt from 'bcrypt';
++import { calculateScoreHelper } from '../src/leaderboard/leaderboard.service';
++
++async function main() {
++  console.log('Seeding database...');
++
++  // Clean up existing data
++  await db.delete(posts);
++  await db.delete(users);
++
++  // Hash passwords
++  const passwordHash = await bcrypt.hash('password123', 10);
++
++  // Create mock users
++  const [user1, user2, user3] = await db.insert(users).values([
++    {
++      username: 'alice',
++      passwordHash,
++      avatar: 'avatar_developer',
++      wastedCalories: 0,
++      logicViolations: 0,
++    },
++    {
++      username: 'bob',
++      passwordHash,
++      avatar: 'avatar_designer',
++      wastedCalories: 0,
++      logicViolations: 0,
++    },
++    {
++      username: 'charlie',
++      passwordHash,
++      avatar: 'avatar_manager',
++      wastedCalories: 0,
++      logicViolations: 0,
++    },
++  ]).returning();
++
++  console.log('Created mock users.');
++
++  // Use the helper from leaderboard service to avoid duplication (DRY)
++  const calculateScore = calculateScoreHelper;
++
++  const postContents = [
++    {
++      title: 'Quick Update',
++      content: 'We are pivoting. No questions asked. Just trust the process!', // Length: 60 (< 100), Words: 10, Scream: No, Code: No, Frustration: ! (1) => 50 - 50 + 5 = 5
++      authorId: user1.id,
++    },
++    {
++      title: 'Clean Architecture implementation details',
++      content: 'Check out our clean architecture:\n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean and scalable.', // Length: 120, Words: 18, Scream: No, Code: Yes (+100) => 90 + 100 = 190
++      authorId: user2.id,
++    },
++    {
++      title: 'I AM FREAKING OUT NOW',
++      content: 'WHY IS THE DEPLOYMENT FAILING AGAIN?! THIS IS TOTALLY UNACCEPTABLE! OUR CLIENTS ARE LEAVING! HELP...', // Length: 97 (<100), Words: 15, Scream: Yes (+50), Code: No, Frustration: ?, !, !, !, ... (5 occurrences) => 75 + 50 - 50 + 25 = 100
++      authorId: user3.id,
++    },
++    {
++      title: 'The Ultimate Guide to Synergy',
++      content: 'We need to leverage our synergy to align our core competencies and optimize our bandwidth. By scaling our paradigms and disruptive thinking, we will establish a high-performing ecosystem. Let\'s deep dive into the KPIs and OKRs that will drive our pivot. We must ensure that our deliverables are decoupled and cloud-native. This is the only way to monetize our microservices and achieve a paradigm shift. We need to run a sprint to address the low-hanging fruits. This is a game-changer! Our roadmap must be agile and customer-centric. Let\'s touch base next week to align on the action items. We should take this offline and circle back. At the end of the day, it is about the bottom line and bandwidth. We need to think outside the box and push the envelope. This is a win-win situation for all stakeholders. Let\'s hit the ground running and make it happen! Can you double check the server logs? I need to make sure we are not dropping packets. This is critical for our MVP launch. We cannot afford any downtime at this stage! Let\'s get to work now.', // Length: 1026 (>1000), Words: 181, Scream: No, Code: No, Frustration: !, ?, ! (3 occurrences) => 905 + 150 + 15 = 1070
++      authorId: user1.id,
++    },
++    {
++      title: 'MICROSERVICE ARCHITECTURE SHAKEUP',
++      content: 'HELLO TEAM, WE ARE REFACTORING EVERYTHING TO MICROSERVICES TODAY!!!\n\nHere is the new config:\n```yaml\nservices:\n  auth:\n    image: auth-service:latest\n  leaderboard:\n    image: leaderboard:latest\n```\n\nWE MUST DEPLOY THIS RIGHT NOW TO PREVENT DISASTER! DOES ANYONE HAVE QUESTIONS?! IF NOT, JUST MERGE IT AND RUN! DO NOT DELAY OR WE ARE DOOMED!!!', // Length: 318, Words: 53, Scream: Yes (+50), Code: Yes (+100), Frustration: ! (8), ? (2) = 10 occurrences => 265 + 50 + 100 + 50 = 465
++      authorId: user2.id,
++    },
++  ];
++
++  for (const postData of postContents) {
++    const wastedCalories = calculateScore(postData.content);
++    await db.insert(posts).values({
++      title: postData.title,
++      content: postData.content,
++      wastedCalories,
++      authorId: postData.authorId,
++    });
++  }
++
++  console.log('Database seeded successfully!');
++  process.exit(0);
++}
++
++main().catch((err) => {
++  console.error('Seed failed:', err);
++  process.exit(1);
++});
+diff --git a/apps/backend/drizzle/0001_hard_boomerang.sql b/apps/backend/drizzle/0001_hard_boomerang.sql
+new file mode 100644
+index 0000000..d6827d3
+--- /dev/null
++++ b/apps/backend/drizzle/0001_hard_boomerang.sql
+@@ -0,0 +1,11 @@
++CREATE TABLE "posts" (
++	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
++	"title" text NOT NULL,
++	"content" text NOT NULL,
++	"wasted_calories" integer DEFAULT 0 NOT NULL,
++	"author_id" uuid NOT NULL,
++	"created_at" timestamp DEFAULT now() NOT NULL,
++	"updated_at" timestamp DEFAULT now() NOT NULL
++);
++--> statement-breakpoint
++ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_users_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+\ No newline at end of file
 diff --git a/apps/backend/package.json b/apps/backend/package.json
-index c515b36..b1effaf 100644
+index b1effaf..e32c864 100644
 --- a/apps/backend/package.json
 +++ b/apps/backend/package.json
-@@ -5,25 +5,53 @@
-   "scripts": {
+@@ -6,18 +6,22 @@
      "build": "nest build",
      "start": "nest start",
--    "start:dev": "nest start --watch"
-+    "start:dev": "nest start --watch",
-+    "test": "jest"
+     "start:dev": "nest start --watch",
+-    "test": "jest"
++    "test": "jest",
++    "db:seed": "node --env-file=.env -r ts-node/register db/seed.ts"
    },
    "dependencies": {
      "@nestjs/common": "^10.0.0",
      "@nestjs/core": "^10.0.0",
-+    "@nestjs/jwt": "^11.0.2",
+     "@nestjs/jwt": "^11.0.2",
      "@nestjs/platform-express": "^10.0.0",
--    "reflect-metadata": "^0.2.0",
--    "rxjs": "^7.8.1",
-+    "bcrypt": "^6.0.0",
++    "@nestjs/platform-socket.io": "^10.0.0",
++    "@nestjs/websockets": "^10.0.0",
+     "bcrypt": "^6.0.0",
      "drizzle-orm": "0.45.2",
--    "pg": "^8.11.3"
-+    "pg": "^8.11.3",
-+    "reflect-metadata": "^0.2.0",
-+    "rxjs": "^7.8.1"
+     "pg": "^8.11.3",
+     "reflect-metadata": "^0.2.0",
+-    "rxjs": "^7.8.1"
++    "rxjs": "^7.8.1",
++    "socket.io": "^4.7.5"
    },
    "devDependencies": {
      "@nestjs/cli": "^10.0.0",
-     "@nestjs/schematics": "^10.0.0",
-     "@nestjs/testing": "^10.0.0",
-+    "@types/bcrypt": "^5.0.2",
-     "@types/express": "^4.17.17",
-+    "@types/jest": "^29.5.12",
-     "@types/node": "^20.3.1",
--    "typescript": "^5.1.3",
-+    "@types/pg": "^8.11.0",
+@@ -31,6 +35,7 @@
      "drizzle-kit": "^0.30.4",
--    "@types/pg": "^8.11.0"
-+    "jest": "^29.7.0",
-+    "ts-jest": "^29.1.2",
-+    "typescript": "^5.1.3"
-+  },
-+  "jest": {
-+    "moduleFileExtensions": [
-+      "js",
-+      "json",
-+      "ts"
-+    ],
-+    "rootDir": ".",
-+    "roots": [
-+      "<rootDir>/src",
-+      "<rootDir>/../../tests/unit"
-+    ],
-+    "testRegex": ".*\\.spec\\.ts$",
-+    "transform": {
-+      "^.+\\.(t|j)s$": "ts-jest"
-+    },
-+    "collectCoverageFrom": [
-+      "**/*.(t|j)s"
-+    ],
-+    "coverageDirectory": "./coverage",
-+    "testEnvironment": "node"
-   }
--}
-+}
-\ No newline at end of file
+     "jest": "^29.7.0",
+     "ts-jest": "^29.1.2",
++    "ts-node": "^10.9.2",
+     "typescript": "^5.1.3"
+   },
+   "jest": {
 diff --git a/apps/backend/src/app.module.ts b/apps/backend/src/app.module.ts
-index 2f36ce3..5a9bdcb 100644
+index 5a9bdcb..fc08cff 100644
 --- a/apps/backend/src/app.module.ts
 +++ b/apps/backend/src/app.module.ts
-@@ -1,9 +1,11 @@
+@@ -1,11 +1,12 @@
  import { Module } from '@nestjs/common';
  import { DatabaseModule } from './database/database.module';
-+import { AuthModule } from './auth/auth.module';
+ import { AuthModule } from './auth/auth.module';
++import { LeaderboardModule } from './leaderboard/leaderboard.module';
  
  @Module({
--  imports: [DatabaseModule],
-+  imports: [DatabaseModule, AuthModule],
+-  imports: [DatabaseModule, AuthModule],
++  imports: [DatabaseModule, AuthModule, LeaderboardModule],
    controllers: [],
    providers: [],
  })
- export class AppModule {}
-+
-diff --git a/apps/backend/src/auth/auth.controller.ts b/apps/backend/src/auth/auth.controller.ts
+-export class AppModule {}
++export class AppModule { }
+ 
+diff --git a/apps/backend/src/leaderboard/leaderboard.controller.ts b/apps/backend/src/leaderboard/leaderboard.controller.ts
 new file mode 100644
-index 0000000..59779d0
+index 0000000..74b75f4
 --- /dev/null
-+++ b/apps/backend/src/auth/auth.controller.ts
-@@ -0,0 +1,30 @@
-+import { Controller, Post, Body, Get, Put, UseGuards, Request } from '@nestjs/common';
-+import { AuthService } from './auth.service';
-+import { JwtAuthGuard } from './jwt-auth.guard';
++++ b/apps/backend/src/leaderboard/leaderboard.controller.ts
+@@ -0,0 +1,12 @@
++import { Controller, Get } from '@nestjs/common';
++import { LeaderboardService } from './leaderboard.service';
 +
-+@Controller('auth')
-+export class AuthController {
-+  constructor(private readonly authService: AuthService) {}
++@Controller('leaderboard')
++export class LeaderboardController {
++  constructor(private readonly leaderboardService: LeaderboardService) { }
 +
-+  @Post('register')
-+  async register(@Body() body: { username?: string; password?: string }) {
-+    return this.authService.register(body.username ?? '', body.password ?? '');
-+  }
-+
-+  @Post('login')
-+  async login(@Body() body: { username?: string; password?: string }) {
-+    return this.authService.login(body.username ?? '', body.password ?? '');
-+  }
-+
-+  @UseGuards(JwtAuthGuard)
-+  @Get('me')
-+  async me(@Request() req: any) {
-+    return this.authService.validateUser(req.user.sub);
-+  }
-+
-+  @UseGuards(JwtAuthGuard)
-+  @Put('profile')
-+  async updateProfile(@Request() req: any, @Body() body: { username?: string; avatar?: string }) {
-+    return this.authService.updateProfile(req.user.sub, body.username ?? '', body.avatar ?? '');
++  @Get()
++  async getLeaderboard() {
++    return this.leaderboardService.getLeaderboard();
 +  }
 +}
-diff --git a/apps/backend/src/auth/auth.module.ts b/apps/backend/src/auth/auth.module.ts
+diff --git a/apps/backend/src/leaderboard/leaderboard.gateway.ts b/apps/backend/src/leaderboard/leaderboard.gateway.ts
 new file mode 100644
-index 0000000..5cd93c8
+index 0000000..2ecc7df
 --- /dev/null
-+++ b/apps/backend/src/auth/auth.module.ts
-@@ -0,0 +1,20 @@
-+import { Module } from '@nestjs/common';
-+import { JwtModule } from '@nestjs/jwt';
-+import { AuthService } from './auth.service';
-+import { AuthController } from './auth.controller';
++++ b/apps/backend/src/leaderboard/leaderboard.gateway.ts
+@@ -0,0 +1,45 @@
++import {
++  WebSocketGateway,
++  WebSocketServer,
++  OnGatewayConnection,
++  OnGatewayDisconnect,
++} from '@nestjs/websockets';
++import { Server, Socket } from 'socket.io';
++import { LeaderboardService } from './leaderboard.service';
++import { forwardRef, Inject } from '@nestjs/common';
++
++@WebSocketGateway({
++  cors: {
++    origin: '*',
++  },
++})
++export class LeaderboardGateway implements OnGatewayConnection, OnGatewayDisconnect {
++  @WebSocketServer()
++  server: Server;
++
++  constructor(
++    @Inject(forwardRef(() => LeaderboardService))
++    private readonly leaderboardService: LeaderboardService,
++  ) { }
++
++  async handleConnection(client: Socket) {
++    try {
++      const leaderboard = await this.leaderboardService.getLeaderboard();
++      client.emit('leaderboard.updated', leaderboard.data);
++    } catch (err) {
++      // Fail silently or log error
++    }
++  }
++
++  handleDisconnect(client: Socket) { }
++
++  async broadcastLeaderboard() {
++    if (!this.server) return;
++    try {
++      const leaderboard = await this.leaderboardService.getLeaderboard();
++      this.server.emit('leaderboard.updated', leaderboard.data);
++    } catch (err) {
++      // Fail silently or log error
++    }
++  }
++}
+diff --git a/apps/backend/src/leaderboard/leaderboard.module.ts b/apps/backend/src/leaderboard/leaderboard.module.ts
+new file mode 100644
+index 0000000..61af26b
+--- /dev/null
++++ b/apps/backend/src/leaderboard/leaderboard.module.ts
+@@ -0,0 +1,13 @@
++import { Module, forwardRef } from '@nestjs/common';
++import { LeaderboardController } from './leaderboard.controller';
++import { LeaderboardService } from './leaderboard.service';
++import { LeaderboardGateway } from './leaderboard.gateway';
 +import { DatabaseModule } from '../database/database.module';
 +
 +@Module({
-+  imports: [
-+    DatabaseModule,
-+    JwtModule.register({
-+      global: true,
-+      secret: process.env.JWT_SECRET || 'fallback-secret-for-development-only-12345',
-+      signOptions: { expiresIn: '1d' },
-+    }),
-+  ],
-+  controllers: [AuthController],
-+  providers: [AuthService],
-+  exports: [AuthService],
++  imports: [DatabaseModule],
++  controllers: [LeaderboardController],
++  providers: [LeaderboardService, LeaderboardGateway],
++  exports: [LeaderboardService, LeaderboardGateway],
 +})
-+export class AuthModule {}
-diff --git a/apps/backend/src/auth/auth.service.ts b/apps/backend/src/auth/auth.service.ts
++export class LeaderboardModule { }
+diff --git a/apps/backend/src/leaderboard/leaderboard.service.ts b/apps/backend/src/leaderboard/leaderboard.service.ts
 new file mode 100644
-index 0000000..78dc3d0
+index 0000000..0908d51
 --- /dev/null
-+++ b/apps/backend/src/auth/auth.service.ts
-@@ -0,0 +1,135 @@
-+import { Injectable, Inject, BadRequestException, UnauthorizedException } from '@nestjs/common';
++++ b/apps/backend/src/leaderboard/leaderboard.service.ts
+@@ -0,0 +1,130 @@
++import { Injectable, Inject, forwardRef } from '@nestjs/common';
 +import { DRIZZLE } from '../database/database.module';
 +import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 +import * as schema from '../../db/schema';
 +import { eq } from 'drizzle-orm';
-+import * as bcrypt from 'bcrypt';
-+import { JwtService } from '@nestjs/jwt';
++import { LeaderboardGateway } from './leaderboard.gateway';
++
++export interface LeaderboardPost {
++  id: string;
++  title: string;
++  content: string;
++  wastedCalories: number;
++  createdAt: Date;
++  updatedAt: Date;
++  author: {
++    id: string;
++    username: string;
++    avatar: string;
++  };
++}
++
++export function calculateScoreHelper(content: string): number {
++  if (!content) return 0;
++  let score = 0;
++
++  // 1. Word Count: +5 per word (whitespace-separated)
++  const words = content.trim().split(/\s+/).filter((w) => w.length > 0);
++  score += words.length * 5;
++
++  // 2. Capitalization Scream: if > 30% of alphabetic characters are uppercase, +50
++  const alphabeticChars = content.replace(/[^a-zA-Z]/g, '');
++  if (alphabeticChars.length > 0) {
++    const uppercaseChars = content.replace(/[^A-Z]/g, '');
++    const ratio = uppercaseChars.length / alphabeticChars.length;
++    if (ratio > 0.3) {
++      score += 50;
++    }
++  }
++
++  // 3. Over-engineering Penalty: if contains markdown code blocks (```), +100
++  if (content.includes('```')) {
++    score += 100;
++  }
++
++  // 4. Length Modifier: > 1000 chars +150; < 100 chars -50
++  const len = content.length;
++  if (len > 1000) {
++    score += 150;
++  } else if (len < 100) {
++    score -= 50;
++  }
++
++  // 5. Frustration Punctuation: +5 per occurrence of !, ?, or ... (capped at +50)
++  let frustrationCount = 0;
++
++  // Count ...
++  const dotRegex = /\.\.\./g;
++  const dotsMatch = content.match(dotRegex);
++  if (dotsMatch) {
++    frustrationCount += dotsMatch.length;
++  }
++
++  // Count ! and ?
++  const puncRegex = /[!?]/g;
++  const puncsMatch = content.match(puncRegex);
++  if (puncsMatch) {
++    frustrationCount += puncsMatch.length;
++  }
++
++  score += Math.min(frustrationCount, 10) * 5;
++
++  return score;
++}
 +
 +@Injectable()
-+export class AuthService {
++export class LeaderboardService {
 +  constructor(
 +    @Inject(DRIZZLE) private readonly db: NodePgDatabase<typeof schema>,
-+    private readonly jwtService: JwtService,
-+  ) {}
++    @Inject(forwardRef(() => LeaderboardGateway))
++    private readonly leaderboardGateway: LeaderboardGateway,
++  ) { }
 +
-+  async register(username: string, passwordHashRaw: string) {
-+    if (!username || !passwordHashRaw) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: 'Username and password are required. Obviously.' }
-+      });
++  async broadcastUpdate(): Promise<void> {
++    if (this.leaderboardGateway && typeof this.leaderboardGateway.broadcastLeaderboard === 'function') {
++      await this.leaderboardGateway.broadcastLeaderboard();
 +    }
++  }
 +
-+    // Check if user already exists
-+    const existing = await this.db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1);
-+    if (existing.length > 0) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: `Username '${username}' is already taken. Try something more unique, perhaps?` }
-+      });
-+    }
++  calculateScore(content: string): number {
++    return calculateScoreHelper(content);
++  }
 +
-+    // Hash password
-+    const passwordHash = await bcrypt.hash(passwordHashRaw, 10);
++  async getLeaderboard(): Promise<{ success: boolean; data: LeaderboardPost[] }> {
++    const rawPosts = await this.db
++      .select({
++        id: schema.posts.id,
++        title: schema.posts.title,
++        content: schema.posts.content,
++        createdAt: schema.posts.createdAt,
++        updatedAt: schema.posts.updatedAt,
++        author: {
++          id: schema.users.id,
++          username: schema.users.username,
++          avatar: schema.users.avatar,
++        },
++      })
++      .from(schema.posts)
++      .innerJoin(schema.users, eq(schema.posts.authorId, schema.users.id));
 +
-+    // Insert user
-+    const [newUser] = await this.db.insert(schema.users).values({
-+      username,
-+      passwordHash,
-+    }).returning();
++    // Calculate score dynamically to ensure strict correctness
++    const postsWithScores = rawPosts.map((post) => ({
++      ...post,
++      wastedCalories: this.calculateScore(post.content),
++    }));
 +
-+    // Generate JWT token
-+    const token = this.jwtService.sign({ sub: newUser.id, username: newUser.username });
-+
-+    const { passwordHash: _, ...profile } = newUser;
-+    return {
-+      success: true,
-+      data: {
-+        token,
-+        user: profile,
++    // Sort descending by score, and sub-sort by createdAt descending for stability
++    postsWithScores.sort((a, b) => {
++      if (b.wastedCalories !== a.wastedCalories) {
++        return b.wastedCalories - a.wastedCalories;
 +      }
-+    };
-+  }
++      return b.createdAt.getTime() - a.createdAt.getTime();
++    });
 +
-+  async login(username: string, passwordHashRaw: string) {
-+    if (!username || !passwordHashRaw) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: 'Username and password are required. Did you forget them already?' }
-+      });
-+    }
-+
-+    const [user] = await this.db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1);
-+    if (!user) {
-+      throw new UnauthorizedException({
-+        success: false,
-+        error: { message: 'Invalid credentials. Or maybe you do not exist yet.' }
-+      });
-+    }
-+
-+    const isMatch = await bcrypt.compare(passwordHashRaw, user.passwordHash);
-+    if (!isMatch) {
-+      throw new UnauthorizedException({
-+        success: false,
-+        error: { message: 'Invalid credentials. Password memory failure?' }
-+      });
-+    }
-+
-+    const token = this.jwtService.sign({ sub: user.id, username: user.username });
-+
-+    const { passwordHash: _, ...profile } = user;
 +    return {
 +      success: true,
-+      data: {
-+        token,
-+        user: profile,
-+      }
-+    };
-+  }
-+
-+  async validateUser(id: string) {
-+    const [user] = await this.db.select().from(schema.users).where(eq(schema.users.id, id)).limit(1);
-+    if (!user) {
-+      throw new UnauthorizedException({
-+        success: false,
-+        error: { message: 'User session invalid. Please log in again.' }
-+      });
-+    }
-+
-+    const { passwordHash: _, ...profile } = user;
-+    return {
-+      success: true,
-+      data: profile
-+    };
-+  }
-+
-+  async updateProfile(userId: string, username: string, avatar: string) {
-+    if (!username) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: 'Username cannot be empty. It defines your leaderboard existence.' }
-+      });
-+    }
-+
-+    // Check if new username is already taken by another user
-+    const [existing] = await this.db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1);
-+    if (existing && existing.id !== userId) {
-+      throw new BadRequestException({
-+        success: false,
-+        error: { message: `Username '${username}' is already taken. Be original for once.` }
-+      });
-+    }
-+
-+    const [updatedUser] = await this.db.update(schema.users)
-+      .set({ username, avatar, updatedAt: new Date() })
-+      .where(eq(schema.users.id, userId))
-+      .returning();
-+
-+    const { passwordHash: _, ...profile } = updatedUser;
-+    return {
-+      success: true,
-+      data: profile
++      data: postsWithScores,
 +    };
 +  }
 +}
-diff --git a/apps/backend/src/auth/jwt-auth.guard.ts b/apps/backend/src/auth/jwt-auth.guard.ts
-new file mode 100644
-index 0000000..83f105b
---- /dev/null
-+++ b/apps/backend/src/auth/jwt-auth.guard.ts
-@@ -0,0 +1,34 @@
-+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
-+import { JwtService } from '@nestjs/jwt';
-+import { Request } from 'express';
 +
-+@Injectable()
-+export class JwtAuthGuard implements CanActivate {
-+  constructor(private readonly jwtService: JwtService) {}
-+
-+  async canActivate(context: ExecutionContext): Promise<boolean> {
-+    const request = context.switchToHttp().getRequest<Request>();
-+    const token = this.extractTokenFromHeader(request);
-+    if (!token) {
-+      throw new UnauthorizedException({
-+        success: false,
-+        error: { message: 'Authentication token is missing. Access denied.' }
-+      });
-+    }
-+    try {
-+      const payload = await this.jwtService.verifyAsync(token);
-+      request['user'] = payload;
-+    } catch {
-+      throw new UnauthorizedException({
-+        success: false,
-+        error: { message: 'Authentication token is invalid or expired.' }
-+      });
-+    }
-+    return true;
-+  }
-+
-+  private extractTokenFromHeader(request: Request): string | undefined {
-+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-+    return type === 'Bearer' ? token : undefined;
-+  }
-+}
 diff --git a/apps/frontend/package.json b/apps/frontend/package.json
-index 74b4e68..32f8bf7 100644
+index 32f8bf7..1fb3db9 100644
 --- a/apps/frontend/package.json
 +++ b/apps/frontend/package.json
-@@ -11,14 +11,15 @@
-   "dependencies": {
+@@ -12,6 +12,7 @@
      "next": "15.0.0",
      "react": "19.0.0",
--    "react-dom": "19.0.0"
-+    "react-dom": "19.0.0",
-+    "zustand": "5.0.13"
+     "react-dom": "19.0.0",
++    "socket.io-client": "^4.7.5",
+     "zustand": "5.0.13"
    },
    "devDependencies": {
--    "typescript": "^5",
-     "@types/node": "^20",
-     "@types/react": "^18",
-     "@types/react-dom": "^18",
-     "eslint": "^8",
--    "eslint-config-next": "15.0.0"
-+    "eslint-config-next": "15.0.0",
-+    "typescript": "^5"
+@@ -22,4 +23,4 @@
+     "eslint-config-next": "15.0.0",
+     "typescript": "^5"
    }
- }
-diff --git a/apps/frontend/src/app/actions/auth.ts b/apps/frontend/src/app/actions/auth.ts
+-}
++}
+\ No newline at end of file
+diff --git a/apps/frontend/src/app/actions/leaderboard.ts b/apps/frontend/src/app/actions/leaderboard.ts
 new file mode 100644
-index 0000000..f8604a2
+index 0000000..cdbc1ae
 --- /dev/null
-+++ b/apps/frontend/src/app/actions/auth.ts
-@@ -0,0 +1,190 @@
++++ b/apps/frontend/src/app/actions/leaderboard.ts
+@@ -0,0 +1,60 @@
 +'use server';
 +
-+import { cookies } from 'next/headers';
-+
-+export interface UserProfile {
++export interface LeaderboardPost {
 +  id: string;
-+  username: string;
-+  avatar: string;
++  title: string;
++  content: string;
 +  wastedCalories: number;
-+  logicViolations: number;
 +  createdAt: string;
 +  updatedAt: string;
++  author: {
++    id: string;
++    username: string;
++    avatar: string;
++  };
 +}
 +
-+export type ActionResponse<T> =
-+  | { success: true; data: T }
-+  | { success: false; error: { message: string } };
++export type ActionResponse<T> = {
++  success: boolean;
++  data?: T;
++  error?: { message: string; code?: string };
++};
 +
 +const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 +
-+export async function actionRegister(
-+  username?: string,
-+  password?: string
-+): Promise<ActionResponse<{ token: string; user: UserProfile }>> {
-+  if (!username || !password) {
-+    return {
-+      success: false,
-+      error: { message: 'Username and password are required. Do not make me ask again.' },
-+    };
-+  }
-+
++export async function actionGetLeaderboard(): Promise<ActionResponse<LeaderboardPost[]>> {
 +  try {
-+    const res = await fetch(`${BACKEND_URL}/auth/register`, {
-+      method: 'POST',
-+      headers: { 'Content-Type': 'application/json' },
-+      body: JSON.stringify({ username, password }),
-+    });
-+
-+    const data = await res.json();
-+    if (!res.ok) {
-+      return {
-+        success: false,
-+        error: { message: data.error?.message || 'Registration failed. The universe is against you.' },
-+      };
-+    }
-+
-+    const cookieStore = await cookies();
-+    cookieStore.set('token', data.data.token, {
-+      httpOnly: true,
-+      secure: process.env.NODE_ENV === 'production',
-+      maxAge: 60 * 60 * 24, // 1 day
-+      path: '/',
-+    });
-+
-+    return { success: true, data: data.data };
-+  } catch (err) {
-+    return {
-+      success: false,
-+      error: { message: 'Failed to contact backend. Maybe it does not like you.' },
-+    };
-+  }
-+}
-+
-+export async function actionLogin(
-+  username?: string,
-+  password?: string
-+): Promise<ActionResponse<{ token: string; user: UserProfile }>> {
-+  if (!username || !password) {
-+    return {
-+      success: false,
-+      error: { message: 'Username and password are required. Memory issues?' },
-+    };
-+  }
-+
-+  try {
-+    const res = await fetch(`${BACKEND_URL}/auth/login`, {
-+      method: 'POST',
-+      headers: { 'Content-Type': 'application/json' },
-+      body: JSON.stringify({ username, password }),
-+    });
-+
-+    const data = await res.json();
-+    if (!res.ok) {
-+      return {
-+        success: false,
-+        error: { message: data.error?.message || 'Invalid credentials. Password memory failure?' },
-+      };
-+    }
-+
-+    const cookieStore = await cookies();
-+    cookieStore.set('token', data.data.token, {
-+      httpOnly: true,
-+      secure: process.env.NODE_ENV === 'production',
-+      maxAge: 60 * 60 * 24, // 1 day
-+      path: '/',
-+    });
-+
-+    return { success: true, data: data.data };
-+  } catch (err) {
-+    return {
-+      success: false,
-+      error: { message: 'Failed to contact backend. Try checking if it is even running.' },
-+    };
-+  }
-+}
-+
-+export async function actionUpdateProfile(
-+  username: string,
-+  avatar: string
-+): Promise<ActionResponse<UserProfile>> {
-+  const cookieStore = await cookies();
-+  const tokenObj = cookieStore.get('token');
-+  const token = tokenObj?.value;
-+
-+  if (!token) {
-+    return {
-+      success: false,
-+      error: { message: 'Unauthorized. Log in first, please.' },
-+    };
-+  }
-+
-+  try {
-+    const res = await fetch(`${BACKEND_URL}/auth/profile`, {
-+      method: 'PUT',
-+      headers: {
-+        'Content-Type': 'application/json',
-+        Authorization: `Bearer ${token}`,
-+      },
-+      body: JSON.stringify({ username, avatar }),
-+    });
-+
-+    const data = await res.json();
-+    if (!res.ok) {
-+      return {
-+        success: false,
-+        error: { message: data.error?.message || 'Profile update failed. Try to make a valid request.' },
-+      };
-+    }
-+
-+    return { success: true, data: data.data };
-+  } catch (err) {
-+    return {
-+      success: false,
-+      error: { message: 'Failed to update profile. Server did not feel like responding.' },
-+    };
-+  }
-+}
-+
-+export async function actionLogout(): Promise<ActionResponse<null>> {
-+  const cookieStore = await cookies();
-+  cookieStore.delete('token');
-+  return { success: true, data: null };
-+}
-+
-+export async function actionGetMe(): Promise<ActionResponse<UserProfile>> {
-+  const cookieStore = await cookies();
-+  const tokenObj = cookieStore.get('token');
-+  const token = tokenObj?.value;
-+
-+  if (!token) {
-+    return {
-+      success: false,
-+      error: { message: 'No active session.' },
-+    };
-+  }
-+
-+  try {
-+    const res = await fetch(`${BACKEND_URL}/auth/me`, {
++    const res = await fetch(`${BACKEND_URL}/leaderboard`, {
 +      method: 'GET',
 +      headers: {
-+        Authorization: `Bearer ${token}`,
++        'Content-Type': 'application/json',
 +      },
++      next: { revalidate: 0 }, // Ensure dynamic fetching
 +    });
 +
 +    const data = await res.json();
++
 +    if (!res.ok) {
 +      return {
 +        success: false,
-+        error: { message: data.error?.message || 'Session verification failed.' },
++        error: {
++          message: data.error?.message || 'Failed to contact the leaderboard engine. The server is probably taking an unannounced coffee break.',
++          code: data.error?.code || 'BACKEND_ERROR',
++        },
 +      };
 +    }
 +
-+    return { success: true, data: data.data };
++    return {
++      success: true,
++      data: data.data,
++    };
 +  } catch (err) {
 +    return {
 +      success: false,
-+      error: { message: 'Could not reach session server.' },
++      error: {
++        message: 'Failed to contact the leaderboard engine. The server is probably taking a coffee break.',
++        code: 'NETWORK_ERROR',
++      },
 +    };
 +  }
 +}
-diff --git a/apps/frontend/src/app/auth/auth.module.css b/apps/frontend/src/app/auth/auth.module.css
+diff --git a/apps/frontend/src/app/globals.css b/apps/frontend/src/app/globals.css
+index 700cb2e..77a5103 100644
+--- a/apps/frontend/src/app/globals.css
++++ b/apps/frontend/src/app/globals.css
+@@ -9,6 +9,10 @@
+   --font-heading: var(--font-outfit), sans-serif;
+ }
+ 
++* {
++  box-sizing: border-box;
++}
++
+ body {
+   background-color: var(--color-background);
+   color: var(--color-text);
+@@ -24,4 +28,4 @@ h4,
+ h5,
+ h6 {
+   font-family: var(--font-heading);
+-}
++}
+\ No newline at end of file
+diff --git a/apps/frontend/src/app/page.module.css b/apps/frontend/src/app/page.module.css
 new file mode 100644
-index 0000000..c389209
+index 0000000..e5c1a4a
 --- /dev/null
-+++ b/apps/frontend/src/app/auth/auth.module.css
-@@ -0,0 +1,173 @@
-+.container {
++++ b/apps/frontend/src/app/page.module.css
+@@ -0,0 +1,152 @@
++.pageWrapper {
++  min-height: 100vh;
++  background-color: #f8fafc;
++  color: #0f172a;
++  display: flex;
++  flex-direction: column;
++}
++
++.header {
++  background: #ffffff;
++  border-bottom: 1px solid #e2e8f0;
++  padding: 1.25rem 2rem;
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  position: sticky;
++  top: 0;
++  z-index: 10;
++  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
++}
++
++.logoArea {
++  display: flex;
++  align-items: center;
++  gap: 0.75rem;
++  text-decoration: none;
++}
++
++.logoIcon {
++  font-size: 1.75rem;
++}
++
++.logoText {
++  font-family: var(--font-heading);
++  font-size: 1.5rem;
++  font-weight: 800;
++  background: linear-gradient(135deg, hsl(220, 90%, 50%) 0%, #1e40af 100%);
++  -webkit-background-clip: text;
++  -webkit-text-fill-color: transparent;
++  letter-spacing: -0.03em;
++}
++
++.navArea {
++  display: flex;
++  align-items: center;
++  gap: 1rem;
++}
++
++.navButton {
++  font-family: var(--font-heading);
++  font-size: 0.9rem;
++  font-weight: 700;
++  padding: 0.6rem 1.2rem;
++  border-radius: 10px;
++  cursor: pointer;
++  transition: all 0.2s ease;
++  text-decoration: none;
++}
++
++.primaryBtn {
++  background: hsl(220, 90%, 50%);
++  color: #ffffff;
++  border: none;
++  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
++}
++
++.primaryBtn:hover {
++  background: #1d4ed8;
++  transform: translateY(-1px);
++}
++
++.secondaryBtn {
++  background: #f1f5f9;
++  color: #334155;
++  border: 1px solid #cbd5e1;
++}
++
++.secondaryBtn:hover {
++  background: #e2e8f0;
++}
++
++.mainContent {
++  flex: 1;
++  max-width: 1200px;
++  width: 100%;
++  margin: 0 auto;
++  padding: 3rem 2rem;
++  display: flex;
++  flex-direction: column;
++  gap: 2rem;
++}
++
++.heroSection {
++  text-align: center;
++  max-width: 800px;
++  margin: 0 auto 1.5rem auto;
++  display: flex;
++  flex-direction: column;
++  gap: 0.75rem;
++}
++
++.heroTitle {
++  font-size: 2.5rem;
++  font-weight: 800;
++  letter-spacing: -0.04em;
++  color: #0f172a;
++  margin: 0;
++}
++
++.heroSubtitle {
++  font-size: 1.1rem;
++  color: #475569;
++  line-height: 1.6;
++  margin: 0;
++}
++
++.footer {
++  background: #ffffff;
++  border-top: 1px solid #e2e8f0;
++  padding: 2rem;
++  text-align: center;
++  font-size: 0.85rem;
++  color: #64748b;
++}
++
++.footerLink {
++  color: hsl(220, 90%, 50%);
++  text-decoration: none;
++  font-weight: 600;
++}
++
++.footerLink:hover {
++  text-decoration: underline;
++}
++
++@media (max-width: 640px) {
++  .header {
++    padding: 1rem;
++  }
++
++  .logoText {
++    font-size: 1.25rem;
++  }
++
++  .mainContent {
++    padding: 2rem 1rem;
++  }
++
++  .heroTitle {
++    font-size: 2rem;
++  }
++}
+\ No newline at end of file
+diff --git a/apps/frontend/src/app/page.tsx b/apps/frontend/src/app/page.tsx
+index 7e03a4e..78f83eb 100644
+--- a/apps/frontend/src/app/page.tsx
++++ b/apps/frontend/src/app/page.tsx
+@@ -1,7 +1,71 @@
+-export default function Home() {
++'use client';
++
++import React, { useEffect, useTransition } from 'react';
++import Link from 'next/link';
++import LeaderboardGrid from '../domains/leaderboard/components/LeaderboardGrid';
++import { useAuthStore } from '../core/store/useAuthStore';
++import { actionGetMe } from './actions/auth';
++import styles from './page.module.css';
++
++export default function HomePage() {
++  const user = useAuthStore((state) => state.user);
++  const setUser = useAuthStore((state) => state.setUser);
++  const [, startTransition] = useTransition();
++
++  useEffect(() => {
++    // Check session on mount to see if user is authenticated
++    startTransition(async () => {
++      const response = await actionGetMe();
++      if (response.success && response.data) {
++        setUser(response.data);
++      } else {
++        setUser(null);
++      }
++    });
++  }, [setUser]);
++
+   return (
+-    <main>
+-      <h1>Reverse Startup Leaderboard</h1>
+-    </main>
++    <div className={styles.pageWrapper}>
++      <header className={styles.header}>
++        <Link href="/" className={styles.logoArea}>
++          <span className={styles.logoIcon}>📉</span>
++          <span className={styles.logoText}>Reverse Startup</span>
++        </Link>
++        <nav className={styles.navArea}>
++          {user ? (
++            <Link href="/profile" className={`${styles.navButton} ${styles.secondaryBtn}`}>
++              👤 {user.username}
++            </Link>
++          ) : (
++            <Link href="/auth" className={`${styles.navButton} ${styles.primaryBtn}`}>
++              Sign In
++            </Link>
++          )}
++        </nav>
++      </header>
++
++      <main className={styles.mainContent}>
++        <section className={styles.heroSection}>
++          <h1 className={styles.heroTitle}>The Hall of Inefficiency</h1>
++          <p className={styles.heroSubtitle}>
++            Where the most convoluted tech stacks, pre-revenue pivots, and overengineered pipelines are proudly celebrated. Real-time broadcast straight from the developers who refuse to ship.
++          </p>
++        </section>
++
++        <section className={styles.leaderboardSection}>
++          <LeaderboardGrid />
++        </section>
++      </main>
++
++      <footer className={styles.footer}>
++        <p>
++          Built for teams who measure progress in lines of code deleted. View the{' '}
++          <Link href="/profile" className={styles.footerLink}>
++            Dashboard
++          </Link>
++          .
++        </p>
++      </footer>
++    </div>
+   );
+ }
+diff --git a/apps/frontend/src/core/api/socket.client.ts b/apps/frontend/src/core/api/socket.client.ts
+new file mode 100644
+index 0000000..d1bdc51
+--- /dev/null
++++ b/apps/frontend/src/core/api/socket.client.ts
+@@ -0,0 +1,13 @@
++import { io, Socket } from 'socket.io-client';
++
++const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
++
++let socket: Socket | null = null;
++
++if (typeof window !== 'undefined') {
++  socket = io(BACKEND_URL, {
++    autoConnect: true,
++  });
++}
++
++export { socket };
+diff --git a/apps/frontend/src/domains/leaderboard/components/GoldenRaspberryBadge.module.css b/apps/frontend/src/domains/leaderboard/components/GoldenRaspberryBadge.module.css
+new file mode 100644
+index 0000000..3c1f38b
+--- /dev/null
++++ b/apps/frontend/src/domains/leaderboard/components/GoldenRaspberryBadge.module.css
+@@ -0,0 +1,41 @@
++.badge {
++  display: inline-flex;
++  align-items: center;
++  gap: 0.35rem;
++  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
++  border: 1px solid #f59e0b;
++  color: #b45309;
++  font-family: var(--font-heading);
++  font-size: 0.75rem;
++  font-weight: 700;
++  text-transform: uppercase;
++  letter-spacing: 0.05em;
++  padding: 0.25rem 0.65rem;
++  border-radius: 9999px;
++  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
++  animation: shine 2s infinite ease-in-out;
++}
++
++.icon {
++  font-size: 0.9rem;
++}
++
++@keyframes shine {
++
++  0%,
++  100% {
++    filter: brightness(1);
++    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
++  }
++
++  50% {
++    filter: brightness(1.15);
++    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .badge {
++    animation: none;
++  }
++}
+\ No newline at end of file
+diff --git a/apps/frontend/src/domains/leaderboard/components/GoldenRaspberryBadge.tsx b/apps/frontend/src/domains/leaderboard/components/GoldenRaspberryBadge.tsx
+new file mode 100644
+index 0000000..3cb9024
+--- /dev/null
++++ b/apps/frontend/src/domains/leaderboard/components/GoldenRaspberryBadge.tsx
+@@ -0,0 +1,11 @@
++import React from 'react';
++import styles from './GoldenRaspberryBadge.module.css';
++
++export default function GoldenRaspberryBadge() {
++  return (
++    <span className={styles.badge} aria-label="Golden Raspberry Badge">
++      <span className={styles.icon}>🏆</span>
++      <span className={styles.label}>Golden Raspberry</span>
++    </span>
++  );
++}
+diff --git a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css
+new file mode 100644
+index 0000000..108f720
+--- /dev/null
++++ b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.module.css
+@@ -0,0 +1,233 @@
++.loadingContainer,
++.errorContainer,
++.emptyContainer {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: center;
++  padding: 4rem 2rem;
++  background: #ffffff;
++  border: 1px solid #e2e8f0;
++  border-radius: 16px;
++  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
++  font-family: var(--font-body);
++  color: #64748b;
++  text-align: center;
++}
++
++.spinner {
++  width: 40px;
++  height: 40px;
++  border: 3px solid #f1f5f9;
++  border-top: 3px solid hsl(220, 90%, 50%);
++  border-radius: 50%;
++  animation: spin 1s linear infinite;
++  margin-bottom: 1rem;
++}
++
++@keyframes spin {
++  0% {
++    transform: rotate(0deg);
++  }
++
++  100% {
++    transform: rotate(360deg);
++  }
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .spinner {
++    animation: spin 3s linear infinite;
++  }
++}
++
++.errorContainer {
++  border-color: #fca5a5;
++  color: #ef4444;
++  background: #fef2f2;
++}
++
++.gridContainer {
++  width: 100%;
++  background: #ffffff;
++  border: 1px solid #e2e8f0;
++  border-radius: 20px;
++  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
++  overflow: hidden;
++  font-family: var(--font-body);
++}
++
++.headerRow {
++  display: grid;
++  grid-template-columns: 80px 180px 1fr 180px;
++  background: #f8fafc;
++  border-bottom: 1px solid #e2e8f0;
++  padding: 1.25rem 2rem;
++  font-family: var(--font-heading);
++  font-size: 0.85rem;
++  font-weight: 700;
++  color: #475569;
++  text-transform: uppercase;
++  letter-spacing: 0.05em;
++}
++
++.postsList {
++  display: flex;
++  flex-direction: column;
++}
++
++.postRow {
++  display: grid;
++  grid-template-columns: 80px 180px 1fr 180px;
++  border-bottom: 1px solid #f1f5f9;
++  padding: 1.5rem 2rem;
++  align-items: center;
++  transition: background-color 0.2s ease, transform 0.2s ease;
++  background: #ffffff;
++}
++
++.postRow:last-child {
++  border-bottom: none;
++}
++
++.postRow:hover {
++  background-color: #f8fafc;
++}
++
++.firstPlace {
++  background-color: #fffbeb;
++}
++
++.firstPlace:hover {
++  background-color: #fef3c7;
++}
++
++.colRank {
++  display: flex;
++  align-items: center;
++}
++
++.rankBadge {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 32px;
++  height: 32px;
++  background: #f1f5f9;
++  color: #475569;
++  font-weight: 700;
++  border-radius: 50%;
++  font-size: 0.9rem;
++}
++
++.firstPlace .rankBadge {
++  background: #f59e0b;
++  color: #ffffff;
++  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
++}
++
++.colAuthor {
++  display: flex;
++  align-items: center;
++  gap: 0.75rem;
++}
++
++.authorAvatar {
++  font-size: 1.5rem;
 +  display: flex;
 +  align-items: center;
 +  justify-content: center;
-+  min-height: 100vh;
-+  background: radial-gradient(circle at center, #1e1b4b 0%, #0f0c1b 100%);
-+  font-family: "Outfit", "Inter", sans-serif;
-+  color: #f8fafc;
-+  padding: 2rem;
++  width: 36px;
++  height: 36px;
++  background: #f8fafc;
++  border: 1px solid #e2e8f0;
++  border-radius: 50%;
 +}
 +
-+.card {
-+  width: 100%;
-+  max-width: 440px;
-+  background: rgba(30, 27, 75, 0.4);
-+  backdrop-filter: blur(16px);
-+  border: 1px solid rgba(255, 255, 255, 0.08);
-+  border-radius: 24px;
-+  padding: 3rem 2.5rem;
-+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-+  text-align: center;
-+  position: relative;
-+  overflow: hidden;
-+  transition:
-+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-+    border-color 0.3s ease;
-+}
-+
-+.card::before {
-+  content: "";
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  width: 100%;
-+  height: 4px;
-+  background: linear-gradient(90deg, #4f46e5, #ec4899);
-+}
-+
-+.title {
-+  font-size: 2.25rem;
-+  font-weight: 800;
-+  margin-bottom: 0.5rem;
-+  background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
-+  -webkit-background-clip: text;
-+  -webkit-text-fill-color: transparent;
-+  letter-spacing: -0.025em;
-+}
-+
-+.subtitle {
++.authorName {
++  font-weight: 600;
++  color: #0f172a;
 +  font-size: 0.95rem;
-+  color: #94a3b8;
-+  margin-bottom: 2.5rem;
 +}
 +
-+.form {
++.colTitle {
 +  display: flex;
 +  flex-direction: column;
-+  gap: 1.25rem;
-+  text-align: left;
++  gap: 0.25rem;
++  padding-right: 2rem;
 +}
 +
-+.fieldGroup {
++.postTitleText {
++  font-family: var(--font-heading);
++  font-weight: 700;
++  color: #0f172a;
++  font-size: 1.1rem;
++}
++
++.postSnippet {
++  color: #475569;
++  font-size: 0.9rem;
++  margin: 0;
++  line-height: 1.5;
++  white-space: pre-wrap;
++}
++
++.colScore {
++  display: flex;
++  align-items: center;
++}
++
++.scoreContainer {
 +  display: flex;
 +  flex-direction: column;
 +  gap: 0.5rem;
 +}
 +
-+.label {
-+  font-size: 0.85rem;
-+  font-weight: 600;
-+  color: #c7d2fe;
-+  text-transform: uppercase;
-+  letter-spacing: 0.05em;
++.scoreValue {
++  font-family: var(--font-heading);
++  font-size: 1.25rem;
++  font-weight: 800;
++  color: hsl(220, 90%, 50%);
 +}
 +
-+.input {
-+  background: rgba(15, 23, 42, 0.6);
-+  border: 1px solid rgba(255, 255, 255, 0.1);
-+  border-radius: 12px;
-+  padding: 0.85rem 1rem;
-+  color: #ffffff;
-+  font-size: 1rem;
-+  transition:
-+    border-color 0.2s ease,
-+    box-shadow 0.2s ease;
++.badgeWrapper {
++  display: flex;
 +}
 +
-+.input:focus {
-+  outline: none;
-+  border-color: #6366f1;
-+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-+}
-+
-+.button {
-+  background: linear-gradient(95deg, #6366f1 0%, #4f46e5 100%);
-+  color: #ffffff;
-+  border: none;
-+  border-radius: 12px;
-+  padding: 1rem;
-+  font-size: 1rem;
-+  font-weight: 700;
-+  cursor: pointer;
-+  transition:
-+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-+    filter 0.2s ease,
-+    box-shadow 0.2s ease;
-+  margin-top: 1rem;
-+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-+}
-+
-+.button:hover:not(:disabled) {
-+  filter: brightness(1.1);
-+  transform: translateY(-1px);
-+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-+}
-+
-+.button:active:not(:disabled) {
-+  transform: translateY(0);
-+}
-+
-+.button:disabled {
-+  background: #334155;
-+  color: #64748b;
-+  cursor: not-allowed;
-+  box-shadow: none;
-+}
-+
-+.toggleContainer {
-+  margin-top: 2rem;
-+  font-size: 0.9rem;
-+  color: #94a3b8;
-+}
-+
-+.toggleLink {
-+  color: #818cf8;
-+  font-weight: 600;
-+  background: none;
-+  border: none;
-+  cursor: pointer;
-+  padding: 0 0.25rem;
-+  text-decoration: underline;
-+  transition: color 0.2s ease;
-+}
-+
-+.toggleLink:hover {
-+  color: #a5b4fc;
-+}
-+
-+.errorMessage {
-+  background: rgba(239, 68, 68, 0.1);
-+  border: 1px solid rgba(239, 68, 68, 0.3);
-+  color: #ef4444;
-+  border-radius: 12px;
-+  padding: 0.85rem 1rem;
-+  font-size: 0.9rem;
-+  margin-bottom: 1.5rem;
-+  text-align: left;
-+  line-height: 1.4;
-+  animation: shake 0.4s ease;
-+}
-+
-+@keyframes shake {
-+  0%,
-+  100% {
-+    transform: translateX(0);
++@media (max-width: 768px) {
++  .headerRow {
++    display: none;
 +  }
-+  25% {
-+    transform: translateX(-4px);
++
++  .postRow {
++    grid-template-columns: 1fr;
++    gap: 1rem;
++    padding: 1.5rem;
 +  }
-+  75% {
-+    transform: translateX(4px);
++
++  .colRank,
++  .colAuthor,
++  .colTitle,
++  .colScore {
++    width: 100%;
++  }
++
++  .colRank {
++    font-size: 0.85rem;
++    color: #64748b;
++  }
++
++  .colRank::before {
++    content: "Rank ";
++    font-weight: 600;
++  }
++
++  .colScore {
++    border-top: 1px dashed #e2e8f0;
++    padding-top: 0.75rem;
++  }
++
++  .firstPlace .colScore {
++    border-top-color: #fcd34d;
 +  }
 +}
-diff --git a/apps/frontend/src/app/auth/page.tsx b/apps/frontend/src/app/auth/page.tsx
+\ No newline at end of file
+diff --git a/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
 new file mode 100644
-index 0000000..e67939b
+index 0000000..890d1e8
 --- /dev/null
-+++ b/apps/frontend/src/app/auth/page.tsx
-@@ -0,0 +1,126 @@
-+'use client';
-+
-+import React, { useState, useTransition } from 'react';
-+import { useRouter } from 'next/navigation';
-+import styles from './auth.module.css';
-+import { actionLogin, actionRegister } from '../actions/auth';
-+import { useAuthStore } from '../../core/store/useAuthStore';
-+
-+export default function AuthPage() {
-+  const router = useRouter();
-+  const [isLogin, setIsLogin] = useState(true);
-+  const [username, setUsername] = useState('');
-+  const [password, setPassword] = useState('');
-+  const [error, setError] = useState<string | null>(null);
-+  const [isPending, startTransition] = useTransition();
-+
-+  const setUser = useAuthStore((state) => state.setUser);
-+
-+  const handleSubmit = (e: React.FormEvent) => {
-+    e.preventDefault();
-+    setError(null);
-+
-+    if (!username.trim()) {
-+      setError('Username cannot be empty. How else will people judge you?');
-+      return;
-+    }
-+
-+    if (password.length < 6) {
-+      setError('Password must be at least 6 characters. Let us make it slightly harder to hack.');
-+      return;
-+    }
-+
-+    startTransition(async () => {
-+      const response = isLogin
-+        ? await actionLogin(username, password)
-+        : await actionRegister(username, password);
-+
-+      if (response.success) {
-+        setUser(response.data.user);
-+        router.push('/profile');
-+      } else {
-+        setError(response.error.message);
-+      }
-+    });
-+  };
-+
-+  return (
-+    <div className={styles.container}>
-+      <div className={styles.card}>
-+        <h1 className={styles.title}>
-+          {isLogin ? 'Log In' : 'Register'}
-+        </h1>
-+        <p className={styles.subtitle}>
-+          {isLogin
-+            ? 'Enter your credentials to check your failure levels.'
-+            : 'Join the leaderboard of wasted engineering potential.'}
-+        </p>
-+
-+        {error && (
-+          <div className={styles.errorMessage} role="alert">
-+            {error}
-+          </div>
-+        )}
-+
-+        <form className={styles.form} onSubmit={handleSubmit}>
-+          <div className={styles.fieldGroup}>
-+            <label className={styles.label} htmlFor="username">
-+              Username
-+            </label>
-+            <input
-+              id="username"
-+              type="text"
-+              className={styles.input}
-+              value={username}
-+              onChange={(e) => setUsername(e.target.value)}
-+              disabled={isPending}
-+              placeholder="e.g. CodeWaster99"
-+              autoComplete="username"
-+            />
-+          </div>
-+
-+          <div className={styles.fieldGroup}>
-+            <label className={styles.label} htmlFor="password">
-+              Password
-+            </label>
-+            <input
-+              id="password"
-+              type="password"
-+              className={styles.input}
-+              value={password}
-+              onChange={(e) => setPassword(e.target.value)}
-+              disabled={isPending}
-+              placeholder="••••••••"
-+              autoComplete="current-password"
-+            />
-+          </div>
-+
-+          <button
-+            type="submit"
-+            className={styles.button}
-+            disabled={isPending}
-+          >
-+            {isPending
-+              ? (isLogin ? 'Logging In...' : 'Registering...')
-+              : (isLogin ? 'Enter' : 'Create Account')}
-+          </button>
-+        </form>
-+
-+        <div className={styles.toggleContainer}>
-+          {isLogin ? "New here? " : "Already have an account? "}
-+          <button
-+            type="button"
-+            className={styles.toggleLink}
-+            onClick={() => {
-+              setIsLogin(!isLogin);
-+              setError(null);
-+            }}
-+            disabled={isPending}
-+          >
-+            {isLogin ? 'Register now' : 'Sign in'}
-+          </button>
-+        </div>
-+      </div>
-+    </div>
-+  );
-+}
-diff --git a/apps/frontend/src/app/profile/page.tsx b/apps/frontend/src/app/profile/page.tsx
-new file mode 100644
-index 0000000..1d2589e
---- /dev/null
-+++ b/apps/frontend/src/app/profile/page.tsx
-@@ -0,0 +1,182 @@
++++ b/apps/frontend/src/domains/leaderboard/components/LeaderboardGrid.tsx
+@@ -0,0 +1,115 @@
 +'use client';
 +
 +import React, { useState, useEffect, useTransition } from 'react';
-+import { useRouter } from 'next/navigation';
-+import styles from './profile.module.css';
-+import { actionGetMe, actionUpdateProfile, actionLogout } from '../actions/auth';
-+import { useAuthStore } from '../../core/store/useAuthStore';
-+
-+const AVATARS = [
-+  { id: 'avatar_clown', emoji: '🤡', label: 'Clown' },
-+  { id: 'avatar_turtle', emoji: '🐢', label: 'Turtle' },
-+  { id: 'avatar_trash', emoji: '🗑️', label: 'Trash Can' },
-+  { id: 'avatar_bug', emoji: '🐛', label: 'Bug' },
-+  { id: 'avatar_ghost', emoji: '👻', label: 'Ghost' },
-+];
++import { actionGetLeaderboard, LeaderboardPost } from '../../../app/actions/leaderboard';
++import { socket } from '../../../core/api/socket.client';
++import GoldenRaspberryBadge from './GoldenRaspberryBadge';
++import styles from './LeaderboardGrid.module.css';
 +
 +const AVATAR_MAP: Record<string, string> = {
 +  avatar_clown: '🤡',
@@ -910,690 +1151,427 @@ index 0000000..1d2589e
 +  default_avatar: '👤'
 +};
 +
-+export default function ProfilePage() {
-+  const router = useRouter();
-+  const user = useAuthStore((state) => state.user);
-+  const setUser = useAuthStore((state) => state.setUser);
-+  const logoutStore = useAuthStore((state) => state.logout);
-+
-+  const [username, setUsername] = useState('');
-+  const [avatar, setAvatar] = useState('default_avatar');
-+  const [success, setSuccess] = useState<string | null>(null);
++export default function LeaderboardGrid() {
++  const [posts, setPosts] = useState<LeaderboardPost[]>([]);
 +  const [error, setError] = useState<string | null>(null);
 +  const [isPending, startTransition] = useTransition();
 +
 +  useEffect(() => {
-+    if (!user) {
-+      startTransition(async () => {
-+        const response = await actionGetMe();
-+        if (response.success) {
-+          setUser(response.data);
-+          setUsername(response.data.username);
-+          setAvatar(response.data.avatar || 'default_avatar');
-+        } else {
-+          router.push('/auth');
-+        }
-+      });
-+    } else {
-+      setUsername(user.username);
-+      setAvatar(user.avatar || 'default_avatar');
-+    }
-+  }, [user, setUser, router]);
-+
-+  const handleSave = (e: React.FormEvent) => {
-+    e.preventDefault();
-+    setError(null);
-+    setSuccess(null);
-+
-+    if (!username.trim()) {
-+      setError('Username cannot be empty. Stand proud.');
-+      return;
-+    }
-+
++    // 1. Fetch initial leaderboard data
 +    startTransition(async () => {
-+      const response = await actionUpdateProfile(username, avatar);
-+      if (response.success) {
-+        setUser(response.data);
-+        setSuccess('Profile updated successfully! Leaderboard is reflecting your changes.');
++      const response = await actionGetLeaderboard();
++      if (response.success && response.data) {
++        setPosts(response.data);
 +      } else {
-+        setError(response.error.message);
++        setError(response.error?.message || 'Failed to fetch leaderboard data.');
 +      }
 +    });
-+  };
 +
-+  const handleLogout = async () => {
-+    setError(null);
-+    setSuccess(null);
-+    const response = await actionLogout();
-+    if (response.success) {
-+      logoutStore();
-+      router.push('/auth');
-+    } else {
-+      setError('Logout failed. You are stuck here.');
++    // 2. Subscribe to real-time WebSocket updates
++    if (socket) {
++      const handleLeaderboardUpdate = (updatedPosts: LeaderboardPost[]) => {
++        setPosts(updatedPosts);
++      };
++
++      socket.on('leaderboard.updated', handleLeaderboardUpdate);
++
++      return () => {
++        socket?.off('leaderboard.updated', handleLeaderboardUpdate);
++      };
 +    }
-+  };
++  }, []);
 +
-+  if (!user && isPending) {
++  if (isPending && posts.length === 0) {
 +    return (
-+      <div className={styles.container}>
-+        <div className={styles.card} style={{ textAlign: 'center' }}>
-+          <h2 className={styles.title}>Loading session...</h2>
-+        </div>
++      <div className={styles.loadingContainer}>
++        <div className={styles.spinner} role="status"></div>
++        <p>Retrieving high-scoring wastefulness...</p>
 +      </div>
 +    );
 +  }
 +
-+  if (!user) return null;
++  if (error && posts.length === 0) {
++    return (
++      <div className={styles.errorContainer} role="alert">
++        <p>{error}</p>
++      </div>
++    );
++  }
++
++  if (posts.length === 0) {
++    return (
++      <div className={styles.emptyContainer}>
++        <p>No wasted calories yet. Someone needs to write some terrible code, quickly!</p>
++      </div>
++    );
++  }
 +
 +  return (
-+    <div className={styles.container}>
-+      <div className={styles.card}>
-+        <div className={styles.header}>
-+          <div className={styles.avatarDisplay}>
-+            {AVATAR_MAP[avatar] || '👤'}
-+          </div>
-+          <h1 className={styles.title}>{user.username}</h1>
-+        </div>
-+
-+        <div className={styles.statsGrid}>
-+          <div className={styles.statBox}>
-+            <div className={styles.statLabel}>Wasted Calories</div>
-+            <div className={styles.statVal}>{user.wastedCalories} kcal</div>
-+          </div>
-+          <div className={styles.statBox}>
-+            <div className={styles.statLabel}>Logic Violations</div>
-+            <div className={styles.statVal}>{user.logicViolations}</div>
-+          </div>
-+        </div>
-+
-+        {success && <div className={styles.successMessage}>{success}</div>}
-+        {error && <div className={styles.errorMessage}>{error}</div>}
-+
-+        <form className={styles.form} onSubmit={handleSave}>
-+          <div className={styles.fieldGroup}>
-+            <label className={styles.label} htmlFor="username">
-+              Username
-+            </label>
-+            <input
-+              id="username"
-+              type="text"
-+              className={styles.input}
-+              value={username}
-+              onChange={(e) => setUsername(e.target.value)}
-+              disabled={isPending}
-+              placeholder="e.g. CodeWaster99"
-+            />
-+          </div>
-+
-+          <div className={styles.fieldGroup}>
-+            <label className={styles.label}>Select Avatar</label>
-+            <div className={styles.avatarPicker}>
-+              {AVATARS.map((av) => (
-+                <button
-+                  key={av.id}
-+                  type="button"
-+                  aria-label={av.label}
-+                  className={`${styles.avatarOption} ${
-+                    avatar === av.id ? styles.avatarOptionSelected : ''
-+                  }`}
-+                  onClick={() => setAvatar(av.id)}
-+                  disabled={isPending}
-+                >
-+                  {av.emoji}
-+                </button>
-+              ))}
++    <div className={styles.gridContainer}>
++      <div className={styles.headerRow}>
++        <div className={styles.colRank}>Rank</div>
++        <div className={styles.colAuthor}>Innovator</div>
++        <div className={styles.colTitle}>Idea</div>
++        <div className={styles.colScore}>Wasted Calories</div>
++      </div>
++      <div className={styles.postsList}>
++        {posts.map((post, index) => {
++          const isFirst = index === 0;
++          return (
++            <div key={post.id} className={`${styles.postRow} ${isFirst ? styles.firstPlace : ''}`}>
++              <div className={styles.colRank}>
++                <span className={styles.rankBadge}>{index + 1}</span>
++              </div>
++              <div className={styles.colAuthor}>
++                <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
++                  {AVATAR_MAP[post.author.avatar] || '👤'}
++                </span>
++                <span className={styles.authorName}>{post.author.username}</span>
++              </div>
++              <div className={styles.colTitle}>
++                <div className={styles.postTitleText}>{post.title}</div>
++                <p className={styles.postSnippet}>{post.content}</p>
++              </div>
++              <div className={styles.colScore}>
++                <div className={styles.scoreContainer}>
++                  <span className={styles.scoreValue}>{post.wastedCalories} kcal</span>
++                  {isFirst && (
++                    <div className={styles.badgeWrapper}>
++                      <GoldenRaspberryBadge />
++                    </div>
++                  )}
++                </div>
++              </div>
 +            </div>
-+          </div>
-+
-+          <div className={styles.actions}>
-+            <button
-+              type="submit"
-+              className={styles.saveButton}
-+              disabled={isPending}
-+            >
-+              {isPending ? 'Saving...' : 'Save Profile'}
-+            </button>
-+            <button
-+              type="button"
-+              className={styles.logoutButton}
-+              onClick={handleLogout}
-+              disabled={isPending}
-+            >
-+              Logout
-+            </button>
-+          </div>
-+        </form>
++          );
++        })}
 +      </div>
 +    </div>
 +  );
 +}
-diff --git a/apps/frontend/src/app/profile/profile.module.css b/apps/frontend/src/app/profile/profile.module.css
+diff --git a/tests/e2e/leaderboard.spec.ts b/tests/e2e/leaderboard.spec.ts
 new file mode 100644
-index 0000000..990b263
+index 0000000..04cb70d
 --- /dev/null
-+++ b/apps/frontend/src/app/profile/profile.module.css
-@@ -0,0 +1,254 @@
-+.container {
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  min-height: 100vh;
-+  background: radial-gradient(circle at center, #111827 0%, #030712 100%);
-+  font-family: "Outfit", "Inter", sans-serif;
-+  color: #f8fafc;
-+  padding: 2rem;
-+}
-+
-+.card {
-+  width: 100%;
-+  max-width: 500px;
-+  background: rgba(17, 24, 39, 0.4);
-+  backdrop-filter: blur(20px);
-+  border: 1px solid rgba(255, 255, 255, 0.08);
-+  border-radius: 28px;
-+  padding: 3rem 2.5rem;
-+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-+  position: relative;
-+}
-+
-+.card::before {
-+  content: "";
-+  position: absolute;
-+  top: 0;
-+  left: 0;
-+  width: 100%;
-+  height: 4px;
-+  background: linear-gradient(90deg, #10b981, #3b82f6);
-+}
-+
-+.header {
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  margin-bottom: 2.5rem;
-+}
-+
-+.avatarDisplay {
-+  font-size: 4.5rem;
-+  background: rgba(255, 255, 255, 0.05);
-+  border: 2px solid rgba(255, 255, 255, 0.15);
-+  border-radius: 50%;
-+  width: 110px;
-+  height: 110px;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  margin-bottom: 1rem;
-+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-+}
-+
-+.avatarDisplay:hover {
-+  transform: scale(1.05) rotate(5deg);
-+}
-+
-+.title {
-+  font-size: 1.85rem;
-+  font-weight: 800;
-+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-+  -webkit-background-clip: text;
-+  -webkit-text-fill-color: transparent;
-+  letter-spacing: -0.02em;
-+}
-+
-+.statsGrid {
-+  display: grid;
-+  grid-template-columns: 1fr 1fr;
-+  gap: 1.25rem;
-+  margin-bottom: 2.5rem;
-+}
-+
-+.statBox {
-+  background: rgba(255, 255, 255, 0.03);
-+  border: 1px solid rgba(255, 255, 255, 0.05);
-+  border-radius: 16px;
-+  padding: 1.25rem;
-+  text-align: center;
-+  transition:
-+    background 0.2s ease,
-+    border-color 0.2s ease;
-+}
-+
-+.statBox:hover {
-+  background: rgba(255, 255, 255, 0.05);
-+  border-color: rgba(255, 255, 255, 0.1);
-+}
-+
-+.statLabel {
-+  font-size: 0.75rem;
-+  font-weight: 700;
-+  color: #94a3b8;
-+  text-transform: uppercase;
-+  letter-spacing: 0.07em;
-+  margin-bottom: 0.5rem;
-+}
-+
-+.statVal {
-+  font-size: 1.75rem;
-+  font-weight: 800;
-+  color: #f1f5f9;
-+}
-+
-+.form {
-+  display: flex;
-+  flex-direction: column;
-+  gap: 1.5rem;
-+}
-+
-+.fieldGroup {
-+  display: flex;
-+  flex-direction: column;
-+  gap: 0.5rem;
-+}
-+
-+.label {
-+  font-size: 0.85rem;
-+  font-weight: 600;
-+  color: #94a3b8;
-+  text-transform: uppercase;
-+  letter-spacing: 0.05em;
-+}
-+
-+.input {
-+  background: rgba(15, 23, 42, 0.6);
-+  border: 1px solid rgba(255, 255, 255, 0.1);
-+  border-radius: 12px;
-+  padding: 0.85rem 1rem;
-+  color: #ffffff;
-+  font-size: 1rem;
-+  transition: border-color 0.2s ease;
-+}
-+
-+.input:focus {
-+  outline: none;
-+  border-color: #10b981;
-+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-+}
-+
-+.avatarPicker {
-+  display: flex;
-+  justify-content: center;
-+  gap: 0.85rem;
-+  margin-top: 0.5rem;
-+}
-+
-+.avatarOption {
-+  font-size: 2rem;
-+  background: rgba(255, 255, 255, 0.03);
-+  border: 2px solid transparent;
-+  border-radius: 50%;
-+  width: 54px;
-+  height: 54px;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  cursor: pointer;
-+  transition:
-+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-+    border-color 0.2s ease,
-+    background 0.2s ease;
-+}
-+
-+.avatarOption:hover {
-+  transform: translateY(-2px) scale(1.05);
-+  background: rgba(255, 255, 255, 0.08);
-+}
-+
-+.avatarOptionSelected {
-+  border-color: #10b981;
-+  background: rgba(16, 185, 129, 0.15) !important;
-+  transform: scale(1.1);
-+}
-+
-+.actions {
-+  display: flex;
-+  gap: 1rem;
-+  margin-top: 1rem;
-+}
-+
-+.saveButton {
-+  flex: 2;
-+  background: linear-gradient(95deg, #10b981 0%, #059669 100%);
-+  color: #ffffff;
-+  border: none;
-+  border-radius: 12px;
-+  padding: 1rem;
-+  font-size: 1rem;
-+  font-weight: 700;
-+  cursor: pointer;
-+  transition:
-+    filter 0.2s ease,
-+    transform 0.2s ease;
-+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-+}
-+
-+.saveButton:hover:not(:disabled) {
-+  filter: brightness(1.1);
-+  transform: translateY(-1px);
-+}
-+
-+.saveButton:disabled {
-+  background: #334155;
-+  color: #64748b;
-+  cursor: not-allowed;
-+  box-shadow: none;
-+}
-+
-+.logoutButton {
-+  flex: 1;
-+  background: rgba(239, 68, 68, 0.1);
-+  color: #ef4444;
-+  border: 1px solid rgba(239, 68, 68, 0.3);
-+  border-radius: 12px;
-+  padding: 1rem;
-+  font-size: 1rem;
-+  font-weight: 700;
-+  cursor: pointer;
-+  transition:
-+    background 0.2s ease,
-+    color 0.2s ease;
-+}
-+
-+.logoutButton:hover {
-+  background: #ef4444;
-+  color: #ffffff;
-+}
-+
-+.errorMessage {
-+  background: rgba(239, 68, 68, 0.1);
-+  border: 1px solid rgba(239, 68, 68, 0.3);
-+  color: #ef4444;
-+  border-radius: 12px;
-+  padding: 0.85rem 1rem;
-+  font-size: 0.9rem;
-+  margin-bottom: 1.5rem;
-+  text-align: left;
-+  line-height: 1.4;
-+}
-+
-+.successMessage {
-+  background: rgba(16, 185, 129, 0.1);
-+  border: 1px solid rgba(16, 185, 129, 0.3);
-+  color: #10b981;
-+  border-radius: 12px;
-+  padding: 0.85rem 1rem;
-+  font-size: 0.9rem;
-+  margin-bottom: 1.5rem;
-+  text-align: left;
-+  line-height: 1.4;
-+}
-diff --git a/apps/frontend/src/core/store/useAuthStore.ts b/apps/frontend/src/core/store/useAuthStore.ts
-new file mode 100644
-index 0000000..80a03aa
---- /dev/null
-+++ b/apps/frontend/src/core/store/useAuthStore.ts
-@@ -0,0 +1,16 @@
-+import { create } from 'zustand';
-+import { UserProfile } from '../../app/actions/auth';
-+
-+interface AuthState {
-+  user: UserProfile | null;
-+  isAuthenticated: boolean;
-+  setUser: (user: UserProfile | null) => void;
-+  logout: () => void;
-+}
-+
-+export const useAuthStore = create<AuthState>((set) => ({
-+  user: null,
-+  isAuthenticated: false,
-+  setUser: (user) => set({ user, isAuthenticated: !!user }),
-+  logout: () => set({ user: null, isAuthenticated: false }),
-+}));
-diff --git a/apps/frontend/src/middleware.ts b/apps/frontend/src/middleware.ts
-new file mode 100644
-index 0000000..afb3d19
---- /dev/null
-+++ b/apps/frontend/src/middleware.ts
-@@ -0,0 +1,28 @@
-+import { NextResponse } from 'next/server';
-+import type { NextRequest } from 'next/server';
-+
-+export function middleware(request: NextRequest) {
-+  const token = request.cookies.get('token')?.value;
-+
-+  if (request.nextUrl.pathname.startsWith('/profile')) {
-+    if (!token) {
-+      const url = request.nextUrl.clone();
-+      url.pathname = '/auth';
-+      return NextResponse.redirect(url);
-+    }
-+  }
-+
-+  if (request.nextUrl.pathname.startsWith('/auth')) {
-+    if (token) {
-+      const url = request.nextUrl.clone();
-+      url.pathname = '/profile';
-+      return NextResponse.redirect(url);
-+    }
-+  }
-+
-+  return NextResponse.next();
-+}
-+
-+export const config = {
-+  matcher: ['/profile/:path*', '/auth/:path*'],
-+};
-diff --git a/tests/e2e/auth.spec.ts b/tests/e2e/auth.spec.ts
-new file mode 100644
-index 0000000..7939ce2
---- /dev/null
-+++ b/tests/e2e/auth.spec.ts
-@@ -0,0 +1,45 @@
++++ b/tests/e2e/leaderboard.spec.ts
+@@ -0,0 +1,30 @@
 +import { test, expect } from '@playwright/test';
 +
-+test.describe('User Authentication & Profile Flow', () => {
-+  test.beforeEach(async ({ page }) => {
-+    await page.context().clearCookies();
-+  });
++test.describe('Real-time Leaderboard & Badges E2E Flow', () => {
++  test('should display leaderboard header, grid columns, and first-place badge', async ({ page }) => {
++    // 1. Visit the home page
++    await page.goto('/');
 +
-+  test('should register, update profile, and logout', async ({ page }) => {
-+    await page.goto('/auth');
-+    await expect(page.locator('h1')).toHaveText('Log In');
++    // 2. Verify logo and hero section
++    await expect(page.locator('text=Reverse Startup')).toBeVisible();
++    await expect(page.locator('h1')).toHaveText('The Hall of Inefficiency');
 +
-+    await page.click('button:has-text("Register now")');
-+    await expect(page.locator('h1')).toHaveText('Register');
++    // 3. Verify leaderboard grid headers
++    await expect(page.locator('text=Rank').first()).toBeVisible();
++    await expect(page.locator('text=Innovator').first()).toBeVisible();
++    await expect(page.locator('text=Idea').first()).toBeVisible();
++    await expect(page.locator('text=Wasted Calories').first()).toBeVisible();
 +
-+    await page.click('button[type="submit"]');
-+    await expect(page.locator('[role="alert"]').first()).toContainText('Username cannot be empty');
++    // 4. Verify that the first-place item displays the Golden Raspberry badge
++    const firstPlaceRow = page.locator('div[class*="firstPlace"]');
++    await expect(firstPlaceRow).toBeVisible();
++    await expect(firstPlaceRow.locator('text=Golden Raspberry')).toBeVisible();
 +
-+    const uniqueUsername = `testuser_${Date.now()}`;
-+    await page.fill('#username', uniqueUsername);
-+    await page.fill('#password', 'securePassword123');
++    // Check that we display the author name and score correctly
++    const authorName = firstPlaceRow.locator('span[class*="authorName"]');
++    await expect(authorName).toBeVisible();
 +
-+    await page.click('button[type="submit"]');
-+
-+    await expect(page).toHaveURL(/\/profile/);
-+    await expect(page.locator('h1')).toHaveText(uniqueUsername);
-+
-+    await expect(page.locator('text=Wasted Calories')).toBeVisible();
-+    await expect(page.locator('text=Logic Violations')).toBeVisible();
-+
-+    await page.fill('#username', `${uniqueUsername}_updated`);
-+    await page.click('button[aria-label="Clown"]');
-+
-+    await page.click('button:has-text("Save Profile")');
-+
-+    await expect(page.locator('text=Profile updated successfully')).toBeVisible();
-+    await expect(page.locator('h1')).toHaveText(`${uniqueUsername}_updated`);
-+
-+    await page.click('button:has-text("Logout")');
-+    await expect(page).toHaveURL(/\/auth/);
-+    await expect(page.locator('h1')).toHaveText('Log In');
-+
-+    await page.goto('/profile');
-+    await expect(page).toHaveURL(/\/auth/);
++    const scoreVal = firstPlaceRow.locator('span[class*="scoreValue"]');
++    await expect(scoreVal).toBeVisible();
 +  });
 +});
-diff --git a/tests/unit/backend/auth/auth.service.spec.ts b/tests/unit/backend/auth/auth.service.spec.ts
+diff --git a/tests/unit/backend/leaderboard/leaderboard.gateway.spec.ts b/tests/unit/backend/leaderboard/leaderboard.gateway.spec.ts
 new file mode 100644
-index 0000000..f13c4fb
+index 0000000..fe12001
 --- /dev/null
-+++ b/tests/unit/backend/auth/auth.service.spec.ts
-@@ -0,0 +1,155 @@
++++ b/tests/unit/backend/leaderboard/leaderboard.gateway.spec.ts
+@@ -0,0 +1,72 @@
 +import { Test, TestingModule } from '@nestjs/testing';
-+import { AuthService } from '../../../../apps/backend/src/auth/auth.service';
++import { LeaderboardGateway } from '../../../../apps/backend/src/leaderboard/leaderboard.gateway';
++import { LeaderboardService } from '../../../../apps/backend/src/leaderboard/leaderboard.service';
++
++describe('LeaderboardGateway', () => {
++  let gateway: LeaderboardGateway;
++  let serviceMock: any;
++  let clientMock: any;
++  let serverMock: any;
++
++  beforeEach(async () => {
++    serviceMock = {
++      getLeaderboard: jest.fn().mockResolvedValue({
++        success: true,
++        data: [
++          {
++            id: 'post-1',
++            title: 'Post 1',
++            content: 'Standard content',
++            wastedCalories: 100,
++            createdAt: new Date(),
++            updatedAt: new Date(),
++            author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
++          },
++        ],
++      }),
++    };
++
++    clientMock = {
++      emit: jest.fn(),
++    };
++
++    serverMock = {
++      emit: jest.fn(),
++    };
++
++    const module: TestingModule = await Test.createTestingModule({
++      providers: [
++        LeaderboardGateway,
++        {
++          provide: LeaderboardService,
++          useValue: serviceMock,
++        },
++      ],
++    }).compile();
++
++    gateway = module.get<LeaderboardGateway>(LeaderboardGateway);
++    gateway.server = serverMock;
++  });
++
++  it('should be defined', () => {
++    expect(gateway).toBeDefined();
++  });
++
++  describe('handleConnection', () => {
++    it('should fetch leaderboard and emit updated data to the connecting client', async () => {
++      await gateway.handleConnection(clientMock);
++
++      expect(serviceMock.getLeaderboard).toHaveBeenCalled();
++      expect(clientMock.emit).toHaveBeenCalledWith('leaderboard.updated', expect.any(Array));
++    });
++  });
++
++  describe('broadcastLeaderboard', () => {
++    it('should fetch leaderboard and emit updated data to all connected clients', async () => {
++      await gateway.broadcastLeaderboard();
++
++      expect(serviceMock.getLeaderboard).toHaveBeenCalled();
++      expect(serverMock.emit).toHaveBeenCalledWith('leaderboard.updated', expect.any(Array));
++    });
++  });
++});
+diff --git a/tests/unit/backend/leaderboard/leaderboard.service.spec.ts b/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
+new file mode 100644
+index 0000000..5efbc9b
+--- /dev/null
++++ b/tests/unit/backend/leaderboard/leaderboard.service.spec.ts
+@@ -0,0 +1,204 @@
++import { Test, TestingModule } from '@nestjs/testing';
++import { LeaderboardService } from '../../../../apps/backend/src/leaderboard/leaderboard.service';
 +import { DRIZZLE } from '../../../../apps/backend/src/database/database.module';
-+import { JwtService } from '@nestjs/jwt';
-+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
-+import * as bcrypt from 'bcrypt';
++import { LeaderboardGateway } from '../../../../apps/backend/src/leaderboard/leaderboard.gateway';
 +
-+
-+jest.mock('bcrypt', () => ({
-+  hash: jest.fn().mockResolvedValue('hashed-password'),
-+  compare: jest.fn(),
-+}));
-+
-+describe('AuthService', () => {
-+  let service: AuthService;
++describe('LeaderboardService', () => {
++  let service: LeaderboardService;
 +  let dbMock: any;
-+  let jwtServiceMock: any;
++  let gatewayMock: any;
 +
 +  beforeEach(async () => {
 +    dbMock = {
 +      select: jest.fn().mockReturnThis(),
 +      from: jest.fn().mockReturnThis(),
-+      where: jest.fn().mockReturnThis(),
-+      limit: jest.fn(),
-+      insert: jest.fn().mockReturnThis(),
-+      values: jest.fn().mockReturnThis(),
-+      returning: jest.fn(),
-+      update: jest.fn().mockReturnThis(),
-+      set: jest.fn().mockReturnThis(),
++      innerJoin: jest.fn(),
 +    };
 +
-+    jwtServiceMock = {
-+      sign: jest.fn().mockReturnValue('mock-jwt-token'),
++    gatewayMock = {
++      broadcastLeaderboard: jest.fn(),
 +    };
 +
 +    const module: TestingModule = await Test.createTestingModule({
 +      providers: [
-+        AuthService,
++        LeaderboardService,
 +        {
 +          provide: DRIZZLE,
 +          useValue: dbMock,
 +        },
 +        {
-+          provide: JwtService,
-+          useValue: jwtServiceMock,
++          provide: LeaderboardGateway,
++          useValue: gatewayMock,
 +        },
 +      ],
 +    }).compile();
 +
-+    service = module.get<AuthService>(AuthService);
++    service = module.get<LeaderboardService>(LeaderboardService);
 +  });
 +
-+  describe('register', () => {
-+    it('should successfully register a new user', async () => {
-+      dbMock.limit.mockResolvedValue([]);
-+      
-+      const createdUser = {
-+        id: 'new-uuid',
-+        username: 'newuser',
-+        passwordHash: 'hashed-password',
-+        avatar: 'default_avatar',
-+        wastedCalories: 0,
-+        logicViolations: 0,
-+        createdAt: new Date(),
-+        updatedAt: new Date(),
-+      };
-+      dbMock.returning.mockResolvedValue([createdUser]);
++  describe('calculateScore', () => {
++    it('should calculate score for a standard post (word count only)', () => {
++      // 20 words, length = 125 (no modifier), no scream, no code, no punctuation
++      const content = 'This is a standard text post with exactly twenty words. We are writing normal sentences without any special characters here.';
++      const score = service.calculateScore(content);
++      // 20 * 5 = 100
++      expect(score).toBe(100);
++    });
 +
-+      const result = await service.register('newuser', 'password123');
++    it('should apply word count and less than 100 characters modifier (-50)', () => {
++      // 2 words, length = 12 (< 100 => -50)
++      const content = 'Hello world.';
++      const score = service.calculateScore(content);
++      // 2 * 5 - 50 = -40
++      expect(score).toBe(-40);
++    });
++
++    it('should apply word count and greater than 1000 characters modifier (+150)', () => {
++      // Create a string with length > 1000 containing 210 words
++      const word = 'word ';
++      const content = word.repeat(210); // 210 words, length = 1050
++      const score = service.calculateScore(content);
++      // 210 * 5 + 150 = 1050 + 150 = 1200
++      expect(score).toBe(1200);
++    });
++
++    it('should apply capitalization scream penalty (+50)', () => {
++      // 10 words, length = 60 (< 100 => -50), > 30% uppercase (100% here)
++      const content = 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.';
++      const score = service.calculateScore(content);
++      // 11 words: 'THIS', 'IS', 'A', 'SCREAMING', 'MESSAGE', 'FOR', 'ALL', 'TEAM', 'MEMBERS', 'TO', 'READ.'
++      // 11 * 5 - 50 + 50 (scream) = 55
++      expect(score).toBe(55);
++    });
++
++    it('should not apply capitalization scream penalty if <= 30% uppercase', () => {
++      // 10 words, length = 54 (< 100 => -50), few uppercase chars (only 2 out of ~45 => < 30%)
++      const content = 'This is a normal message for all team members to read.';
++      const score = service.calculateScore(content);
++      // 11 words * 5 = 55
++      // 55 - 50 = 5
++      expect(score).toBe(5);
++    });
++
++    it('should apply over-engineering code block penalty (+100)', () => {
++      const content = 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.';
++      const score = service.calculateScore(content);
++      // Length: 180 (no modifier)
++      // Words count: 29 words
++      // Score: 29 * 5 + 100 (code) = 245
++      expect(score).toBe(245);
++    });
++
++    it('should apply frustration punctuation points (+5 per occurrence, capped at +50)', () => {
++      const content = 'Why did the server crash?! Oh no! We need to check the logs... asap. Please help us fix this now because we are running out of time!';
++      const score = service.calculateScore(content);
++      // Punctuation: ?, !, !, ..., ! = 5 occurrences => +25
++      // Words: 27
++      // 27 * 5 + 25 = 160
++      expect(score).toBe(160);
++    });
++
++    it('should cap frustration punctuation points at +50', () => {
++      const content = 'FAIL!!! WHY?! OH?! NO!!! CODE!!! HELP!!! NEED BACKUP!!! NOW!!! WE ARE DOOMED!!!';
++      const score = service.calculateScore(content);
++      // Length: 81 (< 100 => -50)
++      // Scream: 100% scream => +50
++      // Punctuation: > 10 => +50
++      // Words: 12
++      // 12 * 5 - 50 + 50 + 50 = 110
++      expect(score).toBe(110);
++    });
++
++    it('should return 0 when content is empty, null, or undefined', () => {
++      expect(service.calculateScore('')).toBe(0);
++      expect(service.calculateScore(null as any)).toBe(0);
++      expect(service.calculateScore(undefined as any)).toBe(0);
++    });
++  });
++
++  describe('getLeaderboard', () => {
++    it('should return posts sorted descending by calculated score', async () => {
++      // Mock DB returning 3 raw posts
++      const mockRawPosts = [
++        {
++          id: 'post-1',
++          title: 'Post 1',
++          content: 'Hello world.', // score: 2 * 5 - 50 = -40
++          createdAt: new Date(),
++          updatedAt: new Date(),
++          author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
++        },
++        {
++          id: 'post-2',
++          title: 'Post 2',
++          content: 'Check out our clean architecture: \n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean, scalable, and beautifully designed for enterprise use.', // score: 245
++          createdAt: new Date(),
++          updatedAt: new Date(),
++          author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },
++        },
++        {
++          id: 'post-3',
++          title: 'Post 3',
++          content: 'THIS IS A SCREAMING MESSAGE FOR ALL TEAM MEMBERS TO READ.', // score: 55
++          createdAt: new Date(),
++          updatedAt: new Date(),
++          author: { id: 'user-3', username: 'charlie', avatar: 'avatar3' },
++        },
++      ];
++
++      dbMock.innerJoin.mockResolvedValue(mockRawPosts);
++
++      const result = await service.getLeaderboard();
 +
 +      expect(dbMock.select).toHaveBeenCalled();
-+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
-+      expect(dbMock.insert).toHaveBeenCalled();
-+      expect(jwtServiceMock.sign).toHaveBeenCalled();
++      expect(dbMock.from).toHaveBeenCalled();
++      expect(dbMock.innerJoin).toHaveBeenCalled();
++
 +      expect(result.success).toBe(true);
-+      expect(result.data.token).toBe('mock-jwt-token');
-+      expect(result.data.user.username).toBe('newuser');
++      expect(result.data).toHaveLength(3);
++
++      // Should be sorted: Post 2 (245) -> Post 3 (55) -> Post 1 (-40)
++      expect(result.data[0].id).toBe('post-2');
++      expect(result.data[0].wastedCalories).toBe(245);
++
++      expect(result.data[1].id).toBe('post-3');
++      expect(result.data[1].wastedCalories).toBe(55);
++
++      expect(result.data[2].id).toBe('post-1');
++      expect(result.data[2].wastedCalories).toBe(-40);
 +    });
 +
-+    it('should throw BadRequestException if user already exists', async () => {
-+      dbMock.limit.mockResolvedValue([{ id: 'existing-id' }]);
++    it('should fall back to stable sorting on createdAt descending when score is equal', async () => {
++      const now = new Date();
++      const mockRawPosts = [
++        {
++          id: 'post-older',
++          title: 'Older Post',
++          content: 'Hello world.', // score: -40
++          createdAt: new Date(now.getTime() - 10000), // Older
++          updatedAt: new Date(),
++          author: { id: 'user-1', username: 'alice', avatar: 'avatar1' },
++        },
++        {
++          id: 'post-newer',
++          title: 'Newer Post',
++          content: 'Hello world.', // score: -40
++          createdAt: now, // Newer
++          updatedAt: new Date(),
++          author: { id: 'user-2', username: 'bob', avatar: 'avatar2' },
++        },
++      ];
 +
-+      await expect(service.register('existinguser', 'password123')).rejects.toThrow(
-+        BadRequestException,
-+      );
-+    });
-+  });
++      dbMock.innerJoin.mockResolvedValue(mockRawPosts);
 +
-+  describe('login', () => {
-+    it('should successfully log in a user with correct credentials', async () => {
-+      const user = {
-+        id: 'user-id',
-+        username: 'testuser',
-+        passwordHash: 'hashed-password',
-+        avatar: 'default_avatar',
-+        wastedCalories: 100,
-+        logicViolations: 2,
-+        createdAt: new Date(),
-+        updatedAt: new Date(),
-+      };
-+      dbMock.limit.mockResolvedValue([user]);
-+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
++      const result = await service.getLeaderboard();
 +
-+      const result = await service.login('testuser', 'password123');
-+
-+      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashed-password');
 +      expect(result.success).toBe(true);
-+      expect(result.data.token).toBe('mock-jwt-token');
-+      expect(result.data.user.id).toBe('user-id');
-+    });
++      expect(result.data).toHaveLength(2);
 +
-+    it('should throw UnauthorizedException for invalid username', async () => {
-+      dbMock.limit.mockResolvedValue([]);
-+
-+      await expect(service.login('nonexistent', 'password123')).rejects.toThrow(
-+        UnauthorizedException,
-+      );
-+    });
-+
-+    it('should throw UnauthorizedException for incorrect password', async () => {
-+      const user = { username: 'testuser', passwordHash: 'hashed-password' };
-+      dbMock.limit.mockResolvedValue([user]);
-+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-+
-+      await expect(service.login('testuser', 'wrongpass')).rejects.toThrow(
-+        UnauthorizedException,
-+      );
-+    });
-+  });
-+
-+  describe('updateProfile', () => {
-+    it('should successfully update profile username and avatar', async () => {
-+      dbMock.limit.mockResolvedValue([]);
-+
-+      const updatedUser = {
-+        id: 'user-id',
-+        username: 'newusername',
-+        passwordHash: 'hashed-password',
-+        avatar: 'avatar_clown',
-+        wastedCalories: 100,
-+        logicViolations: 2,
-+        createdAt: new Date(),
-+        updatedAt: new Date(),
-+      };
-+      dbMock.returning.mockResolvedValue([updatedUser]);
-+
-+      const result = await service.updateProfile('user-id', 'newusername', 'avatar_clown');
-+
-+      expect(dbMock.update).toHaveBeenCalled();
-+      expect(result.success).toBe(true);
-+      expect(result.data.username).toBe('newusername');
-+      expect(result.data.avatar).toBe('avatar_clown');
++      // Newer post should come first (stable sub-sort)
++      expect(result.data[0].id).toBe('post-newer');
++      expect(result.data[1].id).toBe('post-older');
 +    });
 +  });
 +});
 
-</diff>
+```

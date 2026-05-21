@@ -9,6 +9,10 @@
   --font-heading: var(--font-outfit), sans-serif;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text);
