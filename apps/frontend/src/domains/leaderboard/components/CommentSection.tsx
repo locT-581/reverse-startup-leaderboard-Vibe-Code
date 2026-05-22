@@ -86,6 +86,9 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
                     {comment.author.isMercyActive && (
                       <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
                     )}
+                    <span className={styles.violationsBadge} title={`Logic Violations: ${comment.author.logicViolations || 0}`}>
+                      🚨 {comment.author.logicViolations || 0}
+                    </span>
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>

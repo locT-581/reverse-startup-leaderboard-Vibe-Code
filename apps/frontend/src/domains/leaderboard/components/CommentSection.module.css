@@ -152,6 +152,20 @@
   text-decoration: underline;
 }
 
+.violationsBadge {
+  display: inline-flex;
+  align-items: center;
+  background: #fee2e2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .submitBtn {
     transition: none !important;

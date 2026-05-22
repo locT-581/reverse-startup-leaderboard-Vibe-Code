@@ -54,4 +54,10 @@ export class PostsController {
     }
     return this.postsService.vote(req.user.sub, body.targetId, body.targetType);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/report')
+  async reportPost(@Request() req: any, @Param('id') postId: string) {
+    return this.postsService.reportPost(req.user.sub, postId);
+  }
 }

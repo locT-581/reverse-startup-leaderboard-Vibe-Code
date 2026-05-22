@@ -16,9 +16,12 @@ describe('PostsService', () => {
       returning: jest.fn(),
       select: jest.fn().mockReturnThis(),
       from: jest.fn().mockReturnThis(),
-      where: jest.fn(),
+      where: jest.fn().mockReturnThis(),
       update: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
+      transaction: jest.fn((cb) => cb(dbMock)),
+      for: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
     };
 
     leaderboardServiceMock = {
@@ -257,6 +260,68 @@ describe('PostsService', () => {
       await expect(
         service.vote(userId, commentId, 'comment')
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('reportPost', () => {
+    const userId = '11111111-1111-1111-1111-111111111111';
+    const authorId = '22222222-2222-2222-2222-222222222222';
+    const postId = '33333333-3333-3333-3333-333333333333';
+
+    it('should successfully report a post, incrementing author logicViolations by 1', async () => {
+      const mockPost = {
+        id: postId,
+        title: 'Leverage synergy paradigm',
+        authorId: authorId,
+      };
+      const mockUpdatedUser = {
+        id: authorId,
+        username: 'alice',
+        logicViolations: 5,
+      };
+
+      // Mock select post
+      dbMock.limit.mockResolvedValueOnce([mockPost]);
+      // Mock update user chain
+      dbMock.returning.mockResolvedValueOnce([mockUpdatedUser]);
+
+      const result = await service.reportPost(userId, postId);
+
+      expect(dbMock.select).toHaveBeenCalled();
+      expect(dbMock.update).toHaveBeenCalled();
+      expect(dbMock.set).toHaveBeenCalledWith({
+        logicViolations: expect.any(Object),
+        updatedAt: expect.any(Date),
+      });
+      expect(leaderboardServiceMock.broadcastUpdate).toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        postId,
+        authorId: authorId,
+        logicViolations: 5,
+      });
+    });
+
+    it('should throw NotFoundException if post does not exist', async () => {
+      dbMock.limit.mockResolvedValueOnce([]);
+
+      await expect(
+        service.reportPost(userId, postId)
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if user tries to report their own post', async () => {
+      const mockPost = {
+        id: postId,
+        title: 'Mock Post',
+        authorId: userId, // self
+      };
+
+      dbMock.limit.mockResolvedValueOnce([mockPost]);
+
+      await expect(
+        service.reportPost(userId, postId)
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

@@ -12,6 +12,7 @@ export interface LeaderboardPost {
     username: string;
     avatar: string;
     isMercyActive: boolean;
+    logicViolations: number;
   };
   comments?: Array<{
     id: string;
@@ -25,6 +26,7 @@ export interface LeaderboardPost {
       username: string;
       avatar: string;
       isMercyActive: boolean;
+      logicViolations: number;
     };
   }>;
 }

@@ -17,6 +17,7 @@ export interface LeaderboardPost {
     username: string;
     avatar: string;
     isMercyActive: boolean;
+    logicViolations: number;
   };
 }
 
@@ -105,6 +106,7 @@ export class LeaderboardService {
           username: schema.users.username,
           avatar: schema.users.avatar,
           isMercyActive: schema.users.isMercyActive,
+          logicViolations: schema.users.logicViolations,
         },
       })
       .from(schema.posts)
@@ -126,6 +128,7 @@ export class LeaderboardService {
             username: schema.users.username,
             avatar: schema.users.avatar,
             isMercyActive: schema.users.isMercyActive,
+            logicViolations: schema.users.logicViolations,
           },
         })
         .from(schema.comments)

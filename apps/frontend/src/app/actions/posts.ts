@@ -130,3 +130,43 @@ export async function actionSubmitVote(
     };
   }
 }
+
+export async function actionReportPost(
+  postId: string
+): Promise<ActionResponse<any>> {
+  const cookieStore = await cookies();
+  const tokenObj = cookieStore.get('token');
+  const token = tokenObj?.value;
+
+  if (!token) {
+    return {
+      success: false,
+      error: { message: 'You must be authenticated to report a post. Log in first!' },
+    };
+  }
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/posts/${postId}/report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: { message: data.message || data.error?.message || 'Failed to submit report.' },
+      };
+    }
+
+    return { success: true, data: data.data };
+  } catch (err) {
+    return {
+      success: false,
+      error: { message: 'Network error occurred while submitting report.' },
+    };
+  }
+}

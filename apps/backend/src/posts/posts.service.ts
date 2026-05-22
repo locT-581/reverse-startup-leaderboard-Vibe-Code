@@ -210,4 +210,80 @@ export class PostsService {
       };
     }
   }
+
+  async reportPost(userId: string, postId: string) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(postId)) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: 'Invalid postId format. Must be a valid UUID.' },
+      });
+    }
+
+    const result = await this.db.transaction(async (tx) => {
+      // 1. Retrieve the target post with row lock
+      const postRes = await tx
+        .select()
+        .from(schema.posts)
+        .where(eq(schema.posts.id, postId))
+        .for('update')
+        .limit(1);
+
+      if (postRes.length === 0) {
+        throw new NotFoundException({
+          success: false,
+          error: { message: 'Post not found.' },
+        });
+      }
+
+      const post = postRes[0];
+
+      // 2. Validate that the reporter is not the author of the post
+      if (post.authorId === userId) {
+        throw new BadRequestException({
+          success: false,
+          error: { message: "Why are you reporting yourself? That's too logical, stop it!" },
+        });
+      }
+
+      // 3. Transactionally increment the logicViolations of the author in the users table
+      const [updatedUser] = await tx
+        .update(schema.users)
+        .set({
+          logicViolations: sql`${schema.users.logicViolations} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.users.id, post.authorId))
+        .returning();
+
+      if (!updatedUser) {
+        throw new NotFoundException({
+          success: false,
+          error: { message: 'Post author not found.' },
+        });
+      }
+
+      return {
+        post,
+        updatedUser,
+      };
+    });
+
+    // 4. Call broadcastUpdate to broadcast the updated leaderboard to all connected Socket.io clients
+    try {
+      await this.leaderboardService.broadcastUpdate();
+    } catch (e) {
+      console.error('Failed to broadcast leaderboard update after post report:', e);
+    }
+
+    // 5. Return success payload
+    return {
+      success: true,
+      data: {
+        postId: result.post.id,
+        authorId: result.post.authorId,
+        logicViolations: result.updatedUser.logicViolations,
+      },
+    };
+  }
 }

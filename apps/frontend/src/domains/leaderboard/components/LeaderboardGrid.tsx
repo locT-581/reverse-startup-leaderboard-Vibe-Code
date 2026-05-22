@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from 'react';
 import { actionGetLeaderboard, LeaderboardPost } from '../../../app/actions/leaderboard';
+import { actionReportPost } from '../../../app/actions/posts';
 import { socket } from '../../../core/api/socket.client';
 import GoldenRaspberryBadge from './GoldenRaspberryBadge';
 import CommentSection from './CommentSection';
@@ -33,6 +34,36 @@ export default function LeaderboardGrid() {
     title: string;
     authorId: string;
   } | null>(null);
+  const [reportingStates, setReportingStates] = useState<{ [postId: string]: boolean }>({});
+  const [reportingError, setReportingError] = useState<{ [postId: string]: string | null }>({});
+  const [isReporting, startReportTransition] = useTransition();
+
+  const handleReport = (postId: string, authorId: string) => {
+    if (currentUser?.id === authorId) {
+      setReportingError((prev) => ({
+        ...prev,
+        [postId]: "Why are you reporting yourself? That's too logical, stop it!",
+      }));
+      return;
+    }
+
+    setReportingError((prev) => ({ ...prev, [postId]: null }));
+    setReportingStates((prev) => ({ ...prev, [postId]: true }));
+
+    startReportTransition(async () => {
+      try {
+        const response = await actionReportPost(postId);
+        if (!response.success) {
+          setReportingError((prev) => ({
+            ...prev,
+            [postId]: response.error?.message || 'Failed to report logic.',
+          }));
+        }
+      } finally {
+        setReportingStates((prev) => ({ ...prev, [postId]: false }));
+      }
+    });
+  };
 
   useEffect(() => {
     // 1. Fetch initial leaderboard data
@@ -147,11 +178,22 @@ export default function LeaderboardGrid() {
                     {post.author.isMercyActive && (
                       <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
                     )}
+                    <span className={styles.violationsBadge} title={`Logic Violations: ${post.author.logicViolations || 0}`}>
+                      🚨 {post.author.logicViolations || 0}
+                    </span>
                   </span>
                 </div>
                 <div className={styles.colTitle} aria-hidden={isDistorted ? "true" : undefined}>
                   <div className={styles.postTitleText}>{post.title}</div>
                   <p className={styles.postSnippet}>{post.content}</p>
+                  {reportingError[post.id] && (
+                    <span
+                      className={styles.reportErrorMsg}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      ⚠️ {reportingError[post.id]}
+                    </span>
+                  )}
                 </div>
                 <div className={styles.colScore}>
                   <div className={styles.scoreContainer}>
@@ -168,22 +210,34 @@ export default function LeaderboardGrid() {
                         <EvasiveButton targetId={post.id} targetType="post" />
                       </div>
                       {currentUser && (
-                        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                          <button
-                            className={styles.sabotageBtn}
-                            onClick={() => {
-                              setSelectedSabotagePost({
-                                id: post.id,
-                                title: post.title,
-                                authorId: post.author.id,
-                              });
-                              setIsModalOpen(true);
-                            }}
-                            aria-label={`Sabotage post by ${post.author.username}`}
-                          >
-                            Sabotage 😈
-                          </button>
-                        </div>
+                        <>
+                          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                            <button
+                              className={styles.sabotageBtn}
+                              onClick={() => {
+                                setSelectedSabotagePost({
+                                  id: post.id,
+                                  title: post.title,
+                                  authorId: post.author.id,
+                                });
+                                setIsModalOpen(true);
+                              }}
+                              aria-label={`Sabotage post by ${post.author.username}`}
+                            >
+                              Sabotage 😈
+                            </button>
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                            <button
+                              className={styles.reportLogicBtn}
+                              onClick={() => handleReport(post.id, post.author.id)}
+                              disabled={isReporting && !!reportingStates[post.id]}
+                              aria-label={`Report logic in post by ${post.author.username}`}
+                            >
+                              {isReporting && reportingStates[post.id] ? 'Reporting... ⏳' : 'Report Logic 🚨'}
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
