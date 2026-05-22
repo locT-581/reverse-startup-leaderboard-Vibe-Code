@@ -30,6 +30,14 @@
   font-size: 1.75rem;
 }
 
+.logoImage {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+}
+
 .logoText {
   font-family: var(--font-heading);
   font-size: 1.5rem;

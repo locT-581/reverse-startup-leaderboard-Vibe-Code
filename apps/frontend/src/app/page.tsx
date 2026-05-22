@@ -37,8 +37,8 @@ export default function HomePage() {
     <div className={styles.pageWrapper}>
       <header className={styles.header}>
         <Link href="/" className={styles.logoArea}>
-          <span className={styles.logoIcon}>📉</span>
-          <span className={styles.logoText}>Reverse Startup</span>
+          <img src="/logo.png" alt="SnakeLegs Logo" className={styles.logoImage} />
+          <span className={styles.logoText}>SnakeLegs</span>
         </Link>
         <nav className={styles.navArea}>
           {user && (

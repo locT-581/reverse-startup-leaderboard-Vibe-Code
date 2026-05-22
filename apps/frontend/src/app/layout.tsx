@@ -7,7 +7,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin', 'vietnamese'], va
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin', 'vietnamese'], variable: '--font-space-grotesk' });
 
 export const metadata: Metadata = {
-  title: 'Bảng xếp hạng Khởi nghiệp Ngược',
+  title: 'SnakeLegs - Bảng xếp hạng Khởi nghiệp Ngược',
   description: 'SaaS Siêu Hiện Đại',
 };
 

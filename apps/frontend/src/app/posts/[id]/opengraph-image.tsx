@@ -68,7 +68,7 @@ export default async function OgImage({ params }: { params: Promise<{ id: string
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <span style={{ fontSize: 40, marginRight: 15 }}>📉</span>
           <span style={{ fontSize: 32, fontWeight: 'bold', letterSpacing: '-0.02em' }}>
-            Reverse Startup
+            SnakeLegs
           </span>
         </div>
 
