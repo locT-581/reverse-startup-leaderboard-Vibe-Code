@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { ActionResponse } from './auth';
+import { extractErrorMessage } from './utils';
 
 export interface SabotagePack {
   id: string;
@@ -38,9 +39,12 @@ export async function actionGetSabotagePacks(): Promise<ActionResponse<SabotageP
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || data.message || 'Failed to fetch Sabotage Packs.' },
+        error: { message: extractErrorMessage(data, 'Failed to fetch Sabotage Packs.') },
       };
     }
 
@@ -87,9 +91,12 @@ export async function actionCreateCheckoutSession(packId: string): Promise<Actio
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || data.message || 'Failed to create checkout session.' },
+        error: { message: extractErrorMessage(data, 'Failed to create checkout session.') },
       };
     }
 
@@ -125,9 +132,12 @@ export async function actionGetUserInventory(): Promise<ActionResponse<UserInven
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || data.message || 'Failed to fetch inventory.' },
+        error: { message: extractErrorMessage(data, 'Failed to fetch inventory.') },
       };
     }
 
@@ -167,9 +177,12 @@ export async function actionDeploySabotage(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || data.message || 'Failed to deploy sabotage.' },
+        error: { message: extractErrorMessage(data, 'Failed to deploy sabotage.') },
       };
     }
 

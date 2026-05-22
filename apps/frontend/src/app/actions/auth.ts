@@ -20,6 +20,8 @@ export type ActionResponse<T> = {
   error?: { message: string; code?: string };
 };
 
+import { extractErrorMessage } from './utils';
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
 export async function actionRegister(
@@ -45,7 +47,7 @@ export async function actionRegister(
       console.error('[actionRegister] Server returned error:', res.status, data);
       return {
         success: false,
-        error: { message: data.error?.message || 'Registration failed. The universe is against you.' },
+        error: { message: extractErrorMessage(data, 'Registration failed. The universe is against you.') },
       };
     }
 
@@ -90,7 +92,7 @@ export async function actionLogin(
       console.error('[actionLogin] Server returned error:', res.status, data);
       return {
         success: false,
-        error: { message: data.error?.message || 'Invalid credentials. Password memory failure?' },
+        error: { message: extractErrorMessage(data, 'Invalid credentials. Password memory failure?') },
       };
     }
 
@@ -144,7 +146,7 @@ export async function actionUpdateProfile(
       }
       return {
         success: false,
-        error: { message: data.error?.message || 'Profile update failed. Try to make a valid request.' },
+        error: { message: extractErrorMessage(data, 'Profile update failed. Try to make a valid request.') },
       };
     }
 
@@ -192,7 +194,7 @@ export async function actionGetMe(): Promise<ActionResponse<UserProfile>> {
       cookieStore.delete('token');
       return {
         success: false,
-        error: { message: data.error?.message || 'Session verification failed.' },
+        error: { message: extractErrorMessage(data, 'Session verification failed.') },
       };
     }
 
@@ -240,7 +242,7 @@ export async function actionSyncMercyState(
       }
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to sync mercy state.' },
+        error: { message: extractErrorMessage(data, 'Failed to sync mercy state.') },
       };
     }
 
@@ -268,7 +270,7 @@ export async function actionGetProfileByUsername(
     if (!res.ok) {
       return {
         success: false,
-        error: { message: data.error?.message || 'Profile retrieval failed.' },
+        error: { message: extractErrorMessage(data, 'Profile retrieval failed.') },
       };
     }
 

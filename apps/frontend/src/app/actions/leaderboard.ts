@@ -39,6 +39,8 @@ export type ActionResponse<T> = {
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
+import { extractErrorMessage } from './utils';
+
 export async function actionGetLeaderboard(): Promise<ActionResponse<LeaderboardPost[]>> {
   try {
     const res = await fetch(`${BACKEND_URL}/leaderboard`, {
@@ -55,7 +57,7 @@ export async function actionGetLeaderboard(): Promise<ActionResponse<Leaderboard
       return {
         success: false,
         error: {
-          message: data.error?.message || 'Failed to contact the leaderboard engine. The server is probably taking an unannounced coffee break.',
+          message: extractErrorMessage(data, 'Failed to contact the leaderboard engine. The server is probably taking an unannounced coffee break.'),
           code: data.error?.code || 'BACKEND_ERROR',
         },
       };

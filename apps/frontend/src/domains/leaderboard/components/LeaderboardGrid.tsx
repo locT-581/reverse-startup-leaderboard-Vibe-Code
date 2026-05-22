@@ -206,12 +206,14 @@ export default function LeaderboardGrid() {
                     {AVATAR_MAP[post.author.avatar] || '👤'}
                   </span>
                   <span className={styles.authorName}>
-                    {post.author.username}
+                    <span className={styles.usernameText} title={post.author.username}>
+                      {post.author.username}
+                    </span>
                     {post.author.logicViolations >= 5 && (
                       <span className={styles.srOnly}> (Bị phạt đội mũ hề)</span>
                     )}
                     {post.author.isMercyActive && (
-                      <span className={styles.mercyBadge} title="Chế độ Trẻ chập chững đang hoạt động" style={{ marginLeft: '4px' }}>👶</span>
+                      <span className={styles.mercyBadge} title="Chế độ Trẻ chập chững đang hoạt động">👶</span>
                     )}
                     <span className={styles.violationsBadge} title={`Vi phạm logic: ${post.author.logicViolations || 0}`}>
                       🚨 {post.author.logicViolations || 0}

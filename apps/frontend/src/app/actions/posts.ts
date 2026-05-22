@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { ActionResponse } from './auth';
+import { extractErrorMessage } from './utils';
 
 const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001';
 
@@ -32,9 +33,12 @@ export async function actionCreatePost(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to submit post.' },
+        error: { message: extractErrorMessage(data, 'Failed to submit post.') },
       };
     }
 
@@ -74,9 +78,12 @@ export async function actionCreateComment(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to submit comment.' },
+        error: { message: extractErrorMessage(data, 'Failed to submit comment.') },
       };
     }
 
@@ -116,9 +123,12 @@ export async function actionSubmitVote(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.error?.message || 'Failed to submit vote.' },
+        error: { message: extractErrorMessage(data, 'Failed to submit vote.') },
       };
     }
 
@@ -156,9 +166,12 @@ export async function actionReportPost(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
-        error: { message: data.message || data.error?.message || 'Failed to submit report.' },
+        error: { message: extractErrorMessage(data, 'Failed to submit report.') },
       };
     }
 
@@ -183,7 +196,7 @@ export async function actionGetPostById(
     if (!res.ok) {
       return {
         success: false,
-        error: { message: data.error?.message || 'Post retrieval failed.' },
+        error: { message: extractErrorMessage(data, 'Post retrieval failed.') },
       };
     }
 
