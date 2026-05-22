@@ -33,3 +33,8 @@
 
 - Duplicate CSS Keyframe Animations [profile.module.css:81, CommentSection.module.css:76, LeaderboardGrid.module.css:168] — `@keyframes wiggle` is duplicated verbatim in profile.module.css, CommentSection.module.css, and LeaderboardGrid.module.css, pre-existing
 - Inconsistent CSS Positioning Units for Clown Hat Overlay [LeaderboardGrid.module.css:154, CommentSection.module.css:48] — The clown hat positioning offsets use pixel values (top, right), but the size (font-size) is defined in rem. This could lead to misalignment when browser text zoom scales, pre-existing
+
+## Deferred from: code review of 4-4-safe-chaos-protocol-screen-reader-bypass.md (2026-05-22)
+
+- Brittle class-name contains selectors in E2E tests [tests/e2e/accessibility-safe-chaos.spec.ts:54] — E2E tests rely on selectors like `div[class*="postRowWrapper"]` which are brittle in production builds due to CSS Module hashing, pre-existing
+

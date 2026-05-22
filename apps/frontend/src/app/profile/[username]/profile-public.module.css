@@ -187,3 +187,16 @@
   font-weight: 600;
   line-height: 1.4;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarDisplay,
+  .backLink,
+  .statBox {
+    transition: none !important;
+    animation: none !important;
+  }
+  .avatarDisplay:hover,
+  .statBox:hover {
+    transform: none !important;
+  }
+}

@@ -119,12 +119,14 @@ export default function AdCaptchaModal({
   };
 
   const handleButtonEvasion = () => {
-    if (reducedMotion) return;
+    if (typeof document === 'undefined') return;
+    const button = skipBtnRef.current;
+    if (!button || reducedMotion || document.activeElement === button) return;
 
     // Relocate to a random coordinate within bounds
     // We'll use values between -140px and 140px for X, and -80px and 80px for Y
-    const currentX = parseFloat(skipBtnRef.current?.style.getPropertyValue('--skip-x') || '0');
-    const currentY = parseFloat(skipBtnRef.current?.style.getPropertyValue('--skip-y') || '0');
+    const currentX = parseFloat(button.style.getPropertyValue('--skip-x') || '0');
+    const currentY = parseFloat(button.style.getPropertyValue('--skip-y') || '0');
 
     let newX = (Math.random() - 0.5) * 280;
     let newY = (Math.random() - 0.5) * 160;
@@ -137,11 +139,8 @@ export default function AdCaptchaModal({
       newY = newY > 0 ? newY + 40 : newY - 40;
     }
 
-    const button = skipBtnRef.current;
-    if (button) {
-      button.style.setProperty('--skip-x', `${newX}px`);
-      button.style.setProperty('--skip-y', `${newY}px`);
-    }
+    button.style.setProperty('--skip-x', `${newX}px`);
+    button.style.setProperty('--skip-y', `${newY}px`);
   };
 
   if (!isOpen || bypass) return null;

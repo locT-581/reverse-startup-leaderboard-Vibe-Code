@@ -1,5 +1,5 @@
 # generated: 2026-05-18T09:50:34Z
-# last_updated: 2026-05-22T15:37:00+07:00
+# last_updated: 2026-05-22T15:53:30+07:00
 # project: Reverse Startup Leaderboard
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-18T09:50:34Z
-last_updated: 2026-05-22T15:37:00+07:00
+last_updated: 2026-05-22T15:53:30+07:00
 project: Reverse Startup Leaderboard
 project_key: NOKEY
 tracking_system: file-system
@@ -54,14 +54,14 @@ development_status:
   2-3-the-evasive-vote-button: done
   2-4-anti-ux-tracker-mercy-threshold: done
   epic-2-retrospective: optional
-  epic-3: in-progress
+  epic-3: done
   3-1-the-sabotage-storefront: done
   3-2-seamless-checkout-integration: done
   3-3-real-time-sabotage-broadcast: done
   epic-3-retrospective: optional
-  epic-4: in-progress
+  epic-4: done
   4-1-anti-logic-reporting-system: done
   4-2-visual-penalties-the-clown-hat: done
   4-3-viral-sharing-dynamic-previews: done
-  4-4-safe-chaos-protocol-screen-reader-bypass: backlog
+  4-4-safe-chaos-protocol-screen-reader-bypass: done
   epic-4-retrospective: optional

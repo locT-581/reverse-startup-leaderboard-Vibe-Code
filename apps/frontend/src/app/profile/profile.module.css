@@ -413,3 +413,25 @@
   transform: translateY(-1px);
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .avatarDisplay,
+  .avatarOption,
+  .saveButton,
+  .logoutButton,
+  .storeButton,
+  .shareProfileBtn {
+    transition: none !important;
+    animation: none !important;
+  }
+  .avatarDisplay:hover,
+  .avatarOption:hover,
+  .saveButton:hover,
+  .storeButton:hover,
+  .shareProfileBtn:hover {
+    transform: none !important;
+  }
+  .loadingText {
+    animation: none !important;
+  }
+}
