@@ -27,6 +27,7 @@ describe('AuthService', () => {
       returning: jest.fn(),
       update: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
+      transaction: jest.fn().mockImplementation((cb) => cb(dbMock)),
     };
 
     jwtServiceMock = {

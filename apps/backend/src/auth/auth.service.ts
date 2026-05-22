@@ -41,14 +41,26 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(passwordHashRaw, 10);
 
     try {
-      // Insert user
-      const [newUser] = await this.db.insert(schema.users).values({
-        username,
-        passwordHash,
-      }).returning();
+      const { newUser, token } = await this.db.transaction(async (tx) => {
+        // Insert user
+        const [insertedUser] = await tx.insert(schema.users).values({
+          username,
+          passwordHash,
+        }).returning();
 
-      // Generate JWT token
-      const token = this.jwtService.sign({ sub: newUser.id, username: newUser.username });
+        // Give 20 items of each type (effectType) to try out
+        const initialSabotages = [
+          { userId: insertedUser.id, effectType: 'blur', count: 20 },
+          { userId: insertedUser.id, effectType: 'comic_sans', count: 20 },
+          { userId: insertedUser.id, effectType: 'papyrus', count: 20 },
+          { userId: insertedUser.id, effectType: 'deduct_calories', count: 20 },
+        ];
+
+        await tx.insert(schema.userSabotages).values(initialSabotages);
+
+        const token = this.jwtService.sign({ sub: insertedUser.id, username: insertedUser.username });
+        return { newUser: insertedUser, token };
+      });
 
       const { passwordHash: _, ...profile } = newUser;
       return {
