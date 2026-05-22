@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { actionGetPostById } from '../../actions/posts';
 import styles from './post-detail.module.css';
+import MarkdownRenderer from '../../../shared/ui/MarkdownRenderer';
 
 const AVATAR_MAP: Record<string, string> = {
   avatar_clown: '🤡',
@@ -100,7 +101,7 @@ export default async function PublicPostPage({ params }: Props) {
         </article>
 
         <section className={styles.postContent}>
-          {post.content}
+          <MarkdownRenderer text={post.content} />
         </section>
 
         <section className={styles.commentsSection}>
@@ -138,7 +139,9 @@ export default async function PublicPostPage({ params }: Props) {
                         </span>
                         <span className={styles.commentCalories}>{comment.wastedCalories} kcal bị lãng phí</span>
                       </div>
-                      <p className={styles.commentText}>{comment.content}</p>
+                      <div className={styles.commentText}>
+                        <MarkdownRenderer text={comment.content} />
+                      </div>
                     </div>
                   </div>
                 );

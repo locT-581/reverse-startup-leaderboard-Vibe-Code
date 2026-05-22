@@ -1,0 +1,136 @@
+.markdownBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.paragraph {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.unorderedList {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  list-style-type: disc;
+}
+
+.listItem {
+  line-height: 1.5;
+}
+
+/* Code Blocks */
+.codeBlockWrapper {
+  position: relative;
+  background: #0f172a; /* Slate 900 for dark mode look in both themes */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin: 0.75rem 0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.codeLanguage {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  font-family:
+    "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+
+.codePre {
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  padding-top: 1.75rem; /* extra top padding to avoid overlapping the language badge */
+  overflow-x: auto;
+  font-family:
+    "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #cbd5e1; /* slate 300 for readable text */
+}
+
+/* Custom scrollbar for horizontal code block scrolling */
+.codePre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.codePre::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.codePre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.codePre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.codeText {
+  white-space: pre;
+  display: block;
+}
+
+/* Inline code tag */
+.inlineCode {
+  font-family:
+    "Space Grotesk", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  font-size: 0.85em;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #ef4444; /* red accent to stand out */
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  word-break: break-word;
+}
+
+/* In dark-theme parent components, adjust inline code */
+:global(.dark) .inlineCode,
+[class*="post-detail"] .inlineCode,
+[class*="commentsSection"] .inlineCode {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fb7185; /* light rose accent for dark backgrounds */
+}
+
+.link {
+  color: #3b82f6;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.link:hover {
+  color: #2563eb;
+}
+
+:global(.dark) .link,
+[class*="post-detail"] .link,
+[class*="commentsSection"] .link {
+  color: #60a5fa;
+}
+
+:global(.dark) .link:hover,
+[class*="post-detail"] .link:hover,
+[class*="commentsSection"] .link:hover {
+  color: #93c5fd;
+}

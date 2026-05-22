@@ -10,6 +10,7 @@ import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
 import EvasiveButton from '../../anti-ux/components/EvasiveButton';
 import { useMercyStore } from '../../../core/store/useMercyStore';
 import styles from './CommentSection.module.css';
+import MarkdownRenderer from '../../../shared/ui/MarkdownRenderer';
 
 const AVATAR_MAP: Record<string, string> = {
   avatar_clown: '🤡',
@@ -115,7 +116,9 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
                     <EvasiveButton targetId={comment.id} targetType="comment" />
                   </div>
                 </div>
-                <p className={styles.commentText}>{comment.content}</p>
+                <div className={styles.commentText}>
+                  <MarkdownRenderer text={comment.content} />
+                </div>
               </div>
             </div>
           ))

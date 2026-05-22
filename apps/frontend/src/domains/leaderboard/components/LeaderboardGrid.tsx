@@ -11,6 +11,7 @@ import EvasiveButton from '../../anti-ux/components/EvasiveButton';
 import SabotageSelectionModal from '../../sabotage/components/SabotageSelectionModal';
 import { useChaosStore } from '../../../core/store/useChaosStore';
 import styles from './LeaderboardGrid.module.css';
+import MarkdownRenderer from '../../../shared/ui/MarkdownRenderer';
 
 const AVATAR_MAP: Record<string, string> = {
   avatar_clown: '🤡',
@@ -219,7 +220,9 @@ export default function LeaderboardGrid() {
                 </div>
                 <div className={styles.colTitle} aria-hidden={isDistorted ? "true" : undefined}>
                   <div className={styles.postTitleText}>{post.title}</div>
-                  <p className={styles.postSnippet}>{post.content}</p>
+                  <div className={styles.postSnippet}>
+                    <MarkdownRenderer text={post.content} />
+                  </div>
                   {reportingError[post.id] && (
                     <span
                       className={styles.reportErrorMsg}
