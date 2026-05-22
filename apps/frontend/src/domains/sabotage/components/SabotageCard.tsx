@@ -32,7 +32,7 @@ export const SabotageCard: React.FC<SabotageCardProps> = ({ pack }) => {
       if (response.success && response.data?.url) {
         window.location.href = response.data.url;
       } else {
-        setError(response.error?.message || 'Failed to initiate purchase.');
+        setError(response.error?.message || 'Khởi tạo thanh toán thất bại.');
       }
     });
   };
@@ -51,7 +51,7 @@ export const SabotageCard: React.FC<SabotageCardProps> = ({ pack }) => {
           disabled={isPending}
           data-testid={`buy-button-${pack.effectType}`}
         >
-          {isPending ? 'Connecting...' : 'Buy Now'}
+          {isPending ? 'Đang kết nối...' : 'Mua ngay'}
         </button>
       </div>
     </div>

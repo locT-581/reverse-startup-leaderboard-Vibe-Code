@@ -9,7 +9,7 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     test.setTimeout(60000);
     // 1. Register User A to create a post
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
     const userAUsername = `author_user_${uniqueSuffix}`;
     await page.fill('#username', userAUsername);
@@ -19,28 +19,28 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
 
     // Create Post 1 as User A
     await page.goto('/');
-    await page.click('button:has-text("Propose a Paradigm")');
+    await page.click('button:has-text("💡 Đề xuất một Hệ hình")');
     const titleInput1 = page.locator('#post-title-input');
     const contentInput1 = page.locator('#post-content-input');
     const post1Title = `Leverage synergy paradigm ${uniqueSuffix}`;
     await titleInput1.fill(post1Title);
     await contentInput1.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-    await page.click('button:has-text("Propose Paradigm")');
+    await page.click('button:has-text("Đề xuất Mô hình")');
 
     // Solve Ad Captcha 1
-    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const adText1 = await page.locator('#sponsor-ad-text').textContent();
     expect(adText1).not.toBeNull();
     await page.fill('#ad-verification-input', adText1!);
-    await page.click('button:has-text("Verify & Submit")');
-    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
+    await page.click('button:has-text("Xác minh & Gửi")');
+    await expect(page.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible();
 
     // Log out User A
     await page.context().clearCookies();
 
     // 2. Register User B (The frustrated voter)
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     const userBUsername = `frustrated_user_${uniqueSuffix}`;
     await page.fill('#username', userBUsername);
     await page.fill('#password', 'securePassword123');
@@ -107,7 +107,7 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
       await expect(voteBtn1).toHaveText(/COMBO: 1\/5/);
 
       // Click outside (the hero title) to reset and count a failure without expanding the post row
-      await page.locator('h1:has-text("The Hall of Inefficiency")').click();
+      await page.locator('h1:has-text("Sảnh Đường Kém Hiệu Quả")').click();
 
       // Verify combo reset
       await expect(voteBtn1).not.toHaveClass(/vibrating/);
@@ -116,7 +116,7 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     // 4. Verify Mercy Activation Modal pops up on the 10th failure
     const mercyModal = page.locator('#mercy-activation-overlay');
     await expect(mercyModal).toBeVisible();
-    await expect(page.locator('h2#mercy-modal-title')).toContainText('Mercy Mode Activated!');
+    await expect(page.locator('h2#mercy-modal-title')).toContainText('Kích hoạt Chế độ Khoan dung!');
 
     // Dismiss the modal
     await page.click('#dismiss-mercy-modal-btn');
@@ -146,8 +146,8 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
       }
     });
 
-    await page.click('button:has-text("Propose a Paradigm")');
-    await expect(page.locator('h2:has-text("Propose a Paradigm")')).toBeVisible();
+    await page.click('button:has-text("💡 Đề xuất một Hệ hình")');
+    await expect(page.locator('h2:has-text("Đề xuất một Mô hình")')).toBeVisible();
 
     const titleInputB = page.locator('#post-title-input');
     const contentInputB = page.locator('#post-content-input');
@@ -155,15 +155,15 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     await contentInputB.fill('This is a paradigm proposed with mercy active. We will touch base to pivot and scale the KPI.');
 
     // Propose paradigm -> captcha is bypassed, so it should succeed immediately
-    await page.click('button:has-text("Propose Paradigm")');
+    await page.click('button:has-text("Đề xuất Mô hình")');
 
     // Verification modal should NOT remain visible and success banner should show
     const adCaptchaModal = page.locator('#ad-captcha-overlay');
     await expect(adCaptchaModal).not.toBeVisible();
-    await expect(page.locator('text=Paradigm successfully proposed!')).toBeVisible();
+    await expect(page.locator('text=Đề xuất mô hình thành công!')).toBeVisible();
 
     // Wait for the modal to close
-    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
+    await expect(page.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible();
 
     // 8. Verify baby badge 👶 shown next to User B's post row on the leaderboard
     const newPostRow = page.locator('div[class*="postRowWrapper"]', { hasText: `Leverage synergy ${uniqueSuffix}` });
@@ -175,9 +175,9 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     await page.goto('/profile');
     await expect(page).toHaveURL(/\/profile/);
     // Wait for the async session loading to complete
-    await expect(page.locator('h2:has-text("Loading session...")')).not.toBeVisible({ timeout: 15000 });
+    await expect(page.locator('h2:has-text("Đang tải phiên...")')).not.toBeVisible({ timeout: 15000 });
     await expect(page.locator('h1')).toContainText('👶');
-    await expect(page.locator('h3:has-text("Toddler Settings")')).toBeVisible();
+    await expect(page.locator('h3:has-text("Cài đặt cho Trẻ chập chững")')).toBeVisible();
 
     // Verify checkbox is checked
     const toggle = page.locator('#mercy-mode-toggle');
@@ -188,7 +188,7 @@ test.describe('Mercy Threshold & Toddler Mode E2E', () => {
     await expect(page.locator('h1')).not.toContainText('👶');
     
     // Wait for the async database sync to complete before navigating away
-    await expect(page.locator('text=(Syncing...)')).not.toBeVisible();
+    await expect(page.locator('text=(Đang đồng bộ...)')).not.toBeVisible();
 
     // 11. Go back to homepage, wait for cooldown, and verify evasion is restored
     await page.goto('/');

@@ -11,11 +11,11 @@ interface AdCaptchaModalProps {
 }
 
 const SPONSOR_ADS = [
-  'SynergyCoin: Monetizing paradigm shifts via proof-of-synergy blockchains. Pivot today!',
-  'Paradigmer.io: Leverage cloud-native, deep-learning, enterprise-grade synergy for 10x deliverables.',
-  'MoonScale.io: Disruption-as-a-Service targeting frictionless, hyper-growth vertical integrations.',
-  'Deliverablely: Deep dive into leveraging bandwidth to circle back on low-hanging fruits.',
-  'KPI-Accelerate: Streamlining microservices scaling ecosystems to maximize resource monetization.'
+  'SynergyCoin: Kiếm tiền từ chuyển dịch mô hình (paradigm shift) thông qua blockchain bằng chứng synergy. Tái định hướng (pivot) ngay!',
+  'Paradigmer.io: Tận dụng (leverage) synergy cấp doanh nghiệp, học sâu, thuần đám mây cho các kết quả bàn giao (deliverables) x10.',
+  'MoonScale.io: Dịch vụ phá vỡ (disruption-as-a-service) nhắm mục tiêu vào các tích hợp dọc tăng trưởng nhanh (scale), không ma sát.',
+  'Deliverablely: Đi sâu vào việc tận dụng (leveraging) băng thông để quay lại với các cơ hội dễ đạt được.',
+  'KPI-Accelerate: Hợp lý hóa hệ sinh thái quy mô (scaling) microservices để tối đa hóa việc kiếm tiền từ tài nguyên.'
 ];
 
 export default function AdCaptchaModal({
@@ -94,7 +94,7 @@ export default function AdCaptchaModal({
       await onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Verification failed. Please try again.');
+      setErrorMessage(err.message || 'Xác minh thất bại. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -114,7 +114,7 @@ export default function AdCaptchaModal({
     }
     setAdIndex(nextIndex);
     setUserInput('');
-    setErrorMessage('Skip failed! To access your content, please verify a new sponsor.');
+    setErrorMessage('Bỏ qua thất bại! Để truy cập nội dung, vui lòng xác minh nhà tài trợ mới.');
     resetButtonPosition();
   };
 
@@ -159,23 +159,23 @@ export default function AdCaptchaModal({
         <div className={styles.header}>
           <div className={styles.titleContainer}>
             <h2 id="ad-captcha-title" className={styles.title}>
-              Sponsor Message Verification
+              Xác minh thông điệp tài trợ
             </h2>
             <p className={styles.subtitle}>
-              Prove you value enterprise monetization before publishing. Copy the corporate truth exactly.
+              Chứng minh bạn coi trọng việc kiếm tiền doanh nghiệp trước khi xuất bản. Sao chép chính xác sự thật của tập đoàn.
             </p>
           </div>
           <button
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close sponsor verification"
+            aria-label="Đóng xác minh nhà tài trợ"
           >
             &times;
           </button>
         </div>
 
         <div className={styles.adBanner}>
-          <div className={styles.adTag}>SPONSORED AD</div>
+          <div className={styles.adTag}>QUẢNG CÁO ĐƯỢC TÀI TRỢ</div>
           <p className={styles.adText} id="sponsor-ad-text">{currentAd}</p>
         </div>
 
@@ -183,14 +183,14 @@ export default function AdCaptchaModal({
           <form onSubmit={handleVerifySubmit} className={styles.form}>
             <div className={styles.inputGroup}>
               <label htmlFor="ad-verification-input" className={styles.label}>
-                Type the sponsored message exactly:
+                Nhập chính xác thông điệp được tài trợ:
               </label>
               <textarea
                 id="ad-verification-input"
                 className={styles.textarea}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder="Type here..."
+                placeholder="Nhập vào đây..."
                 disabled={isSubmitting}
                 aria-invalid={!isMatch && userInput.length > 0}
                 aria-describedby={!isMatch && userInput.length > 0 ? 'ad-match-error' : undefined}
@@ -200,7 +200,7 @@ export default function AdCaptchaModal({
               {!isMatch && userInput.trim().length > 0 && (
                 <div id="ad-match-error" className={styles.errorMessage} role="alert">
                   <span className={styles.errorIcon} aria-hidden="true">⚠️</span>
-                  Input does not match the sponsored text. Case-sensitive.
+                  Đầu vào không khớp với văn bản được tài trợ. Phân biệt chữ hoa chữ thường.
                 </div>
               )}
 
@@ -223,9 +223,9 @@ export default function AdCaptchaModal({
                   '--skip-x': '0px',
                   '--skip-y': '0px'
                 } as React.CSSProperties}
-                aria-label="Skip Ad"
+                aria-label="Bỏ qua quảng cáo"
               >
-                Skip Ad
+                Bỏ qua quảng cáo
               </button>
 
               <button
@@ -233,7 +233,7 @@ export default function AdCaptchaModal({
                 className={styles.submitBtn}
                 disabled={!isMatch || isSubmitting}
               >
-                {isSubmitting ? 'Verifying...' : 'Verify & Submit'}
+                {isSubmitting ? 'Đang xác minh...' : 'Xác minh & Gửi'}
               </button>
             </div>
           </form>

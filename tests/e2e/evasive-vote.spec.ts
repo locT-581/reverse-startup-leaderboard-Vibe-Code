@@ -8,7 +8,7 @@ test.describe('Evasive Vote Button E2E', () => {
   async function registerAndGoToLeaderboard(page: any) {
     // Register a new user (User A)
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
     const uniqueUsername = `evasive_user_${uniqueSuffix}`;
     await page.fill('#username', uniqueUsername);
@@ -20,30 +20,30 @@ test.describe('Evasive Vote Button E2E', () => {
     await page.goto('/');
 
     // Propose a paradigm (create a post as User A)
-    await page.click('button:has-text("Propose a Paradigm")');
+    await page.click('button:has-text("💡 Đề xuất một Hệ hình")');
     const titleInput = page.locator('#post-title-input');
     const contentInput = page.locator('#post-content-input');
     const uniqueTitle = `Leverage synergy paradigm ${uniqueSuffix}`;
     await titleInput.fill(uniqueTitle);
     await contentInput.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-    await page.click('button:has-text("Propose Paradigm")');
+    await page.click('button:has-text("Đề xuất Mô hình")');
 
     // Solve Ad Captcha
-    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const postAdText = await page.locator('#sponsor-ad-text').textContent();
     expect(postAdText).not.toBeNull();
     await page.fill('#ad-verification-input', postAdText!);
-    await page.click('button:has-text("Verify & Submit")');
+    await page.click('button:has-text("Xác minh & Gửi")');
 
     // Wait for modal to disappear
-    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
+    await expect(page.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible();
 
     // Log out User A by clearing cookies
     await page.context().clearCookies();
 
     // Register User B to vote on User A's post
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     const userBUsername = `voter_user_${uniqueSuffix}`;
     await page.fill('#username', userBUsername);
     await page.fill('#password', 'securePassword123');
@@ -99,7 +99,7 @@ test.describe('Evasive Vote Button E2E', () => {
 
     // Should now be vibrating
     await expect(voteBtn).toHaveClass(/vibrating/);
-    await expect(voteBtn).toHaveText(/CLICK 5x SPEED!|COMBO:/);
+    await expect(voteBtn).toHaveText(/BẤM NHANH 5 LẦN!|COMBO:/);
 
     // 3. Click 5 times to successfully submit
     for (let i = 0; i < 5; i++) {
@@ -110,7 +110,7 @@ test.describe('Evasive Vote Button E2E', () => {
     // 4. Verify Cooldown state and +50 kcal
     await expect(voteBtn).toHaveClass(/cooldown/);
     await expect(voteBtn).toBeDisabled();
-    await expect(voteBtn).toHaveText(/Breathing.../);
+    await expect(voteBtn).toHaveText(/Hồi chiêu/);
 
     const scoreLocator = postRow.locator('[class*="scoreValue"]');
     // Verify score increases by 50
@@ -144,7 +144,7 @@ test.describe('Evasive Vote Button E2E', () => {
     await expect(voteBtn).not.toHaveClass(/vibrating/);
     const tooltip = postRow.locator('[class*="tooltip"]');
     await expect(tooltip).toBeVisible();
-    await expect(tooltip).toHaveText(/Too slow, grandpa!/);
+    await expect(tooltip).toHaveText(/Quá chậm rồi, ông bạn!/);
   });
 
   test('should reset combo when clicking outside the button in vibrating state', async ({ page }) => {
@@ -175,7 +175,7 @@ test.describe('Evasive Vote Button E2E', () => {
     await expect(voteBtn).not.toHaveClass(/vibrating/);
     const tooltip = postRow.locator('[class*="tooltip"]');
     await expect(tooltip).toBeVisible();
-    await expect(tooltip).toHaveText(/Synergy levels too low!/);
+    await expect(tooltip).toHaveText(/Mức độ đồng bộ \(synergy\) quá thấp!/);
   });
 
   test('should bypass evasion and vote in a single press when using keyboard navigation', async ({ page }) => {
@@ -200,7 +200,7 @@ test.describe('Evasive Vote Button E2E', () => {
     // Verify it bypassed and went straight to cooldown/success state
     await expect(voteBtn).toHaveClass(/cooldown/);
     await expect(voteBtn).toBeDisabled();
-    await expect(voteBtn).toHaveText(/Breathing.../);
+    await expect(voteBtn).toHaveText(/Hồi chiêu/);
 
     const scoreLocator = postRow.locator('[class*="scoreValue"]');
     await expect(scoreLocator).toContainText(`${initialScore + 50} kcal`);
@@ -226,7 +226,7 @@ test.describe('Evasive Vote Button E2E', () => {
     // Verify it bypassed and went straight to cooldown
     await expect(voteBtn).toHaveClass(/cooldown/);
     await expect(voteBtn).toBeDisabled();
-    await expect(voteBtn).toHaveText(/Breathing.../);
+    await expect(voteBtn).toHaveText(/Hồi chiêu/);
 
     const scoreLocator = postRow.locator('[class*="scoreValue"]');
     await expect(scoreLocator).toContainText(`${initialScore + 50} kcal`);

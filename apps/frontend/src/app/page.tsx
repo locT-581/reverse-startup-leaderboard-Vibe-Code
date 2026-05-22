@@ -43,16 +43,16 @@ export default function HomePage() {
         <nav className={styles.navArea}>
           {user && (
             <Link href="/sabotage-store" className={styles.sabotageLink} data-testid="nav-sabotage-store">
-              😈 Sabotage Store
+              😈 Cửa hàng Phá hoại
             </Link>
           )}
           {user ? (
             <Link href="/profile" className={`${styles.navButton} ${styles.secondaryBtn}`} id="nav-profile-btn">
-              👤 {user.username} {user.isMercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>}
+              👤 {user.username} {user.isMercyActive && <span title="Chế độ Trẻ chập chững đang hoạt động" style={{ marginLeft: '4px' }}>👶</span>}
             </Link>
           ) : (
             <Link href="/auth" className={`${styles.navButton} ${styles.primaryBtn}`}>
-              Sign In
+              Đăng nhập
             </Link>
           )}
         </nav>
@@ -60,9 +60,9 @@ export default function HomePage() {
 
       <main className={styles.mainContent}>
         <section className={styles.heroSection}>
-          <h1 className={styles.heroTitle}>The Hall of Inefficiency</h1>
+          <h1 className={styles.heroTitle}>Sảnh Đường Kém Hiệu Quả</h1>
           <p className={styles.heroSubtitle}>
-            Where the most convoluted tech stacks, pre-revenue pivots, and overengineered pipelines are proudly celebrated. Real-time broadcast straight from the developers who refuse to ship.
+            Nơi những tech stack phức tạp nhất, những lần pivot chưa có doanh thu, và các pipeline được overengineer quá mức được tự hào vinh danh. Phát trực tiếp theo thời gian thực từ chính những lập trình viên từ chối ship hàng.
           </p>
         </section>
 
@@ -72,15 +72,15 @@ export default function HomePage() {
               className={styles.proposeBtn}
               onClick={() => setIsModalOpen(true)}
             >
-              💡 Propose a Paradigm
+              💡 Đề xuất một Hệ hình
             </button>
           ) : (
             <div className={styles.unauthCard}>
               <p className={styles.unauthText}>
-                Want to share your own overengineered masterpiece and log some wasted calories?
+                Bạn muốn chia sẻ kiệt tác overengineer của riêng mình và ghi nhận calo lãng phí?
               </p>
               <Link href="/auth" className={styles.authLink}>
-                Sign In to Propose a Paradigm
+                Đăng nhập để Đề xuất một Hệ hình
               </Link>
             </div>
           )}
@@ -93,9 +93,9 @@ export default function HomePage() {
 
       <footer className={styles.footer}>
         <p>
-          Built for teams who measure progress in lines of code deleted. View the{' '}
+          Được thiết làm riêng cho những đội ngũ đo lường tiến trình bằng số dòng code bị xóa. Xem{' '}
           <Link href="/profile" className={styles.footerLink}>
-            Dashboard
+            Bảng điều khiển
           </Link>
           .
         </p>

@@ -24,16 +24,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!response.success || !response.data) {
     return {
-      title: 'Post Not Found | Reverse Startup',
-      description: 'The requested overengineered paradigm does not exist.',
+      title: 'Không tìm thấy bài viết | Khởi nghiệp Ngược',
+      description: 'Hệ hình overengineer được yêu cầu không tồn tại.',
     };
   }
 
   const post = response.data;
-  const description = `${post.author.username} wasted ${post.wastedCalories} kcal proposing this paradigm. Read the convoluted explanation and solutions.`;
+  const description = `${post.author.username} đã lãng phí ${post.wastedCalories} kcal khi đề xuất hệ hình này. Đọc giải thích phức tạp và các giải pháp.`;
 
   return {
-    title: `${post.title} | Reverse Startup`,
+    title: `${post.title} | Khởi nghiệp Ngược`,
     description,
     openGraph: {
       title: post.title,
@@ -66,7 +66,7 @@ export default async function PublicPostPage({ params }: Props) {
     <div className={styles.container}>
       <div className={styles.card}>
         <Link href="/" className={styles.backLink}>
-          ← Back to Leaderboard
+          ← Quay lại Bảng xếp hạng
         </Link>
 
         <article className={styles.postHeader}>
@@ -77,7 +77,7 @@ export default async function PublicPostPage({ params }: Props) {
               role="img"
               aria-label={
                 isAuthorPenalized
-                  ? `${post.author.avatar} - penalized with a clown hat`
+                  ? `${post.author.avatar} - bị phạt với mũ chú hề`
                   : post.author.avatar
               }
             >
@@ -86,14 +86,14 @@ export default async function PublicPostPage({ params }: Props) {
             <div className={styles.authorInfo}>
               <span className={styles.authorName}>
                 {post.author.username}
-                {isAuthorPenalized && <span className={styles.srOnly}> (Penalized with a clown hat)</span>}
-                {post.author.isMercyActive && <span title="Toddler Mode Active">👶</span>}
-                <span className={styles.violationsBadge} title={`Logic Violations: ${post.author.logicViolations}`}>
+                {isAuthorPenalized && <span className={styles.srOnly}> (Bị phạt với mũ chú hề)</span>}
+                {post.author.isMercyActive && <span title="Chế độ Trẻ chập chững đang hoạt động">👶</span>}
+                <span className={styles.violationsBadge} title={`Vi phạm logic: ${post.author.logicViolations}`}>
                   🚨 {post.author.logicViolations}
                 </span>
               </span>
               <span className={styles.postStats}>
-                Wasted <strong>{post.wastedCalories} kcal</strong> on this paradigm
+                Đã lãng phí <strong>{post.wastedCalories} kcal</strong> cho hệ hình này
               </span>
             </div>
           </div>
@@ -104,9 +104,9 @@ export default async function PublicPostPage({ params }: Props) {
         </section>
 
         <section className={styles.commentsSection}>
-          <h2 className={styles.commentsTitle}>Proposed Solutions ({comments.length})</h2>
+          <h2 className={styles.commentsTitle}>Giải pháp được đề xuất ({comments.length})</h2>
           {comments.length === 0 ? (
-            <p className={styles.noComments}>No solutions proposed yet. The problem remains beautifully unresolved.</p>
+            <p className={styles.noComments}>Chưa có giải pháp nào được đề xuất. Vấn đề vẫn chưa được giải quyết một cách đẹp đẽ.</p>
           ) : (
             <div className={styles.commentsList}>
               {comments.map((comment: any) => {
@@ -120,7 +120,7 @@ export default async function PublicPostPage({ params }: Props) {
                       role="img"
                       aria-label={
                         isCommenterPenalized
-                          ? `${comment.author.avatar} - penalized with a clown hat`
+                          ? `${comment.author.avatar} - bị phạt với mũ chú hề`
                           : comment.author.avatar
                       }
                     >
@@ -130,13 +130,13 @@ export default async function PublicPostPage({ params }: Props) {
                       <div className={styles.commentMeta}>
                         <span className={styles.commentAuthor}>
                           {comment.author.username}
-                          {isCommenterPenalized && <span className={styles.srOnly}> (Penalized with a clown hat)</span>}
-                          {comment.author.isMercyActive && <span title="Toddler Mode Active">👶</span>}
-                          <span className={styles.violationsBadge} title={`Logic Violations: ${comment.author.logicViolations}`}>
+                          {isCommenterPenalized && <span className={styles.srOnly}> (Bị phạt với mũ chú hề)</span>}
+                          {comment.author.isMercyActive && <span title="Chế độ Trẻ chập chững đang hoạt động">👶</span>}
+                          <span className={styles.violationsBadge} title={`Vi phạm logic: ${comment.author.logicViolations}`}>
                             🚨 {comment.author.logicViolations}
                           </span>
                         </span>
-                        <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>
+                        <span className={styles.commentCalories}>{comment.wastedCalories} kcal bị lãng phí</span>
                       </div>
                       <p className={styles.commentText}>{comment.content}</p>
                     </div>

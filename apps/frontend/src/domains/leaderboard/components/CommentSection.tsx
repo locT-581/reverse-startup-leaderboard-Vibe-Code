@@ -21,12 +21,12 @@ const AVATAR_MAP: Record<string, string> = {
 };
 
 const AVATAR_LABEL_MAP: Record<string, string> = {
-  avatar_clown: 'Clown',
-  avatar_turtle: 'Turtle',
-  avatar_trash: 'Trash Can',
-  avatar_bug: 'Bug',
-  avatar_ghost: 'Ghost',
-  default_avatar: 'Avatar'
+  avatar_clown: 'Hề',
+  avatar_turtle: 'Rùa',
+  avatar_trash: 'Thùng rác',
+  avatar_bug: 'Bọ',
+  avatar_ghost: 'Ma',
+  default_avatar: 'Ảnh đại diện'
 };
 
 interface CommentSectionProps {
@@ -67,7 +67,7 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
       setCommentText('');
       setHasError(false);
     } else {
-      const errMsg = res.error?.message || 'Failed to submit solution.';
+      const errMsg = res.error?.message || 'Gửi giải pháp thất bại.';
       setSubmitError(errMsg);
       throw new Error(errMsg);
     }
@@ -77,11 +77,11 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
 
   return (
     <div className={styles.commentsContainer} onClick={(e) => e.stopPropagation()}>
-      <h3 className={styles.commentsHeader}>Proposed Solutions ({comments.length})</h3>
+      <h3 className={styles.commentsHeader}>Giải pháp Đề xuất ({comments.length})</h3>
 
       <div className={styles.commentsList}>
         {comments.length === 0 ? (
-          <p className={styles.noComments}>No solutions proposed yet. Propose a solution below if you dare.</p>
+          <p className={styles.noComments}>Chưa có giải pháp nào được đề xuất. Hãy thử đề xuất một giải pháp bên dưới nếu bạn dám.</p>
         ) : (
           comments.map((comment) => (
             <div key={comment.id} className={styles.commentRow}>
@@ -90,8 +90,8 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
                 role="img"
                 aria-label={
                   comment.author.logicViolations >= 5
-                    ? `${AVATAR_LABEL_MAP[comment.author.avatar] || 'Avatar'} - penalized with a clown hat`
-                    : (AVATAR_LABEL_MAP[comment.author.avatar] || 'Avatar')
+                    ? `${AVATAR_LABEL_MAP[comment.author.avatar] || 'Ảnh đại diện'} - bị phạt đội mũ hề`
+                    : (AVATAR_LABEL_MAP[comment.author.avatar] || 'Ảnh đại diện')
                 }
               >
                 {AVATAR_MAP[comment.author.avatar] || '👤'}
@@ -101,17 +101,17 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
                   <span className={styles.commentAuthor}>
                     {comment.author.username}
                     {comment.author.logicViolations >= 5 && (
-                      <span className={styles.srOnly}> (Penalized with a clown hat)</span>
+                      <span className={styles.srOnly}> (Bị phạt đội mũ hề)</span>
                     )}
                     {comment.author.isMercyActive && (
-                      <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
+                      <span className={styles.mercyBadge} title="Chế độ Trẻ chập chững đang hoạt động" style={{ marginLeft: '4px' }}>👶</span>
                     )}
-                    <span className={styles.violationsBadge} title={`Logic Violations: ${comment.author.logicViolations || 0}`}>
+                    <span className={styles.violationsBadge} title={`Vi phạm logic: ${comment.author.logicViolations || 0}`}>
                       🚨 {comment.author.logicViolations || 0}
                     </span>
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span className={styles.commentCalories}>{comment.wastedCalories} kcal wasted</span>
+                    <span className={styles.commentCalories}>Lãng phí {comment.wastedCalories} kcal</span>
                     <EvasiveButton targetId={comment.id} targetType="comment" />
                   </div>
                 </div>
@@ -125,17 +125,17 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
       {currentUser ? (
         <>
           <form onSubmit={handleSubmit} className={styles.newCommentForm}>
-            <h4 className={styles.formTitle}>Propose an Overengineered Solution</h4>
+            <h4 className={styles.formTitle}>Đề xuất Giải pháp Phức tạp hóa (Overengineered)</h4>
             <HostileInput
               type="textarea"
               id={`comment-input-${post.id}`}
               value={commentText}
               onChange={setCommentText}
-              placeholder="Type your convoluted solution here... It must be strictly longer than the original post."
+              placeholder="Nhập giải pháp phức tạp của bạn vào đây... Nó bắt buộc phải dài hơn bài viết gốc."
               validationType="comment"
               originalPostLength={post.content.length}
               onErrorChange={setHasError}
-              label="Solution Comment Content"
+              label="Nội dung Bình luận Giải pháp"
               hideLabelVisually={true}
             />
             {submitError && (
@@ -148,7 +148,7 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
               className={styles.submitBtn}
               disabled={isButtonDisabled}
             >
-              {isSubmitting ? 'Submitting Solution...' : 'Submit Solution'}
+              {isSubmitting ? 'Đang gửi Giải pháp...' : 'Gửi Giải pháp'}
             </button>
           </form>
           <AdCaptchaModal
@@ -160,11 +160,11 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
         </>
       ) : (
         <div className={styles.authPrompt}>
-          Want to propose a solution?{' '}
+          Bạn muốn đề xuất giải pháp?{' '}
           <Link href="/auth" className={styles.authLink}>
-            Sign In
+            Đăng nhập
           </Link>{' '}
-          first.
+          trước.
         </div>
       )}
     </div>

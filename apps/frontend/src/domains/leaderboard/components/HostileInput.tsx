@@ -65,21 +65,21 @@ export default function HostileInput({
   const validate = (val: string): string | null => {
     const trimmed = typeof val === 'string' ? val.trim() : '';
     if (!trimmed) {
-      return 'This field is required. Do not leave it empty.';
+      return 'Trường này là bắt buộc. Không được để trống.';
     }
 
     if (validationType === 'title') {
       if (trimmed.length < 10 || countBuzzwords(trimmed) < 2) {
-        return 'Your title lacks sufficient synergy. Please leverage additional paradigms.';
+        return 'Tiêu đề của bạn thiếu synergy cần thiết. Vui lòng leverage thêm các paradigm.';
       }
     } else if (validationType === 'content') {
       if (trimmed.length < 50 || countBuzzwords(trimmed) < 3) {
-        return 'This explanation is dangerously legible. Inject more synergy.';
+        return 'Giải thích này dễ hiểu đến mức nguy hiểm. Hãy thêm synergy.';
       }
     } else if (validationType === 'comment') {
       const minLength = originalPostLength ?? 0;
       if (trimmed.length <= minLength) {
-        return `Your solution has insufficient volume. It must strictly exceed the original post's length of ${minLength} characters.`;
+        return `Giải pháp của bạn chưa đủ độ dài. Nó bắt buộc phải vượt quá độ dài ${minLength} ký tự của bài đăng gốc.`;
       }
     }
 

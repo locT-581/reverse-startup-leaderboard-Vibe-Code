@@ -21,12 +21,12 @@ export default function AuthPage() {
     setError(null);
 
     if (!username.trim()) {
-      setError('Username cannot be empty. How else will people judge you?');
+      setError('Tên người dùng không được để trống. Làm thế nào người khác đánh giá bạn được?');
       return;
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters. Let us make it slightly harder to hack.');
+      setError('Mật khẩu phải có ít nhất 6 ký tự. Hãy làm nó khó bị hack hơn một chút.');
       return;
     }
 
@@ -39,7 +39,7 @@ export default function AuthPage() {
         setUser(response.data.user);
         router.push('/profile');
       } else {
-        setError(response.error?.message || 'Authentication failed.');
+        setError(response.error?.message || 'Xác thực thất bại.');
       }
     });
   };
@@ -48,12 +48,12 @@ export default function AuthPage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <h1 className={styles.title}>
-          {isLogin ? 'Log In' : 'Register'}
+          {isLogin ? 'Đăng nhập' : 'Đăng ký'}
         </h1>
         <p className={styles.subtitle}>
           {isLogin
-            ? 'Enter your credentials to check your failure levels.'
-            : 'Join the leaderboard of wasted engineering potential.'}
+            ? 'Nhập thông tin của bạn để kiểm tra mức độ thất bại.'
+            : 'Tham gia bảng xếp hạng của những tiềm năng kỹ thuật bị lãng phí.'}
         </p>
 
         {error && (
@@ -65,7 +65,7 @@ export default function AuthPage() {
         <form className={styles.form} onSubmit={handleSubmit}>
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor="username">
-              Username
+              Tên người dùng
             </label>
             <input
               id="username"
@@ -74,14 +74,14 @@ export default function AuthPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={isPending}
-              placeholder="e.g. CodeWaster99"
+              placeholder="vd: CodeWaster99"
               autoComplete="username"
             />
           </div>
 
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor="password">
-              Password
+              Mật khẩu
             </label>
             <input
               id="password"
@@ -101,13 +101,13 @@ export default function AuthPage() {
             disabled={isPending}
           >
             {isPending
-              ? (isLogin ? 'Logging In...' : 'Registering...')
-              : (isLogin ? 'Enter' : 'Create Account')}
+              ? (isLogin ? 'Đang đăng nhập...' : 'Đang đăng ký...')
+              : (isLogin ? 'Vào' : 'Tạo tài khoản')}
           </button>
         </form>
 
         <div className={styles.toggleContainer}>
-          {isLogin ? "New here? " : "Already have an account? "}
+          {isLogin ? "Mới ở đây? " : "Đã có tài khoản? "}
           <button
             type="button"
             className={styles.toggleLink}
@@ -117,7 +117,7 @@ export default function AuthPage() {
             }}
             disabled={isPending}
           >
-            {isLogin ? 'Register now' : 'Sign in'}
+            {isLogin ? 'Đăng ký ngay' : 'Đăng nhập'}
           </button>
         </div>
       </div>

@@ -70,12 +70,12 @@ export default function SabotageStorePage() {
           if (packsRes.success && packsRes.data) {
             setPacks(packsRes.data);
           } else {
-            setError(packsRes.error?.message || 'Failed to fetch Sabotage Packs.');
+            setError(packsRes.error?.message || 'Không thể tải các Gói Phá hoại.');
           }
 
           await fetchInventory();
         } catch (err) {
-          setError('An unexpected error occurred while loading packs.');
+          setError('Đã xảy ra lỗi không mong đợi khi tải các gói.');
         } finally {
           setLoading(false);
         }
@@ -102,7 +102,7 @@ export default function SabotageStorePage() {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
-        <h2 className={styles.loadingText}>Initializing Storefront...</h2>
+        <h2 className={styles.loadingText}>Đang khởi tạo Cửa hàng...</h2>
       </div>
     );
   }
@@ -113,11 +113,11 @@ export default function SabotageStorePage() {
         <div className={styles.headerContent}>
           <div className={styles.logoArea}>
             <span className={styles.logoEmoji}>😈</span>
-            <h1 className={styles.logoText}>Sabotage Store</h1>
+            <h1 className={styles.logoText}>Cửa hàng Phá hoại</h1>
           </div>
           <nav className={styles.nav}>
             <Link href="/" className={styles.backLink} data-testid="back-to-leaderboard">
-              ← Back to Leaderboard
+              ← Quay lại Bảng xếp hạng
             </Link>
           </nav>
         </div>
@@ -125,9 +125,9 @@ export default function SabotageStorePage() {
 
       <main className={styles.mainContent}>
         <div className={styles.heroSection}>
-          <h2 className={styles.heroTitle}>Troll Capitalism</h2>
+          <h2 className={styles.heroTitle}>Chủ nghĩa Tư bản Trêu đùa</h2>
           <p className={styles.heroSubtitle}>
-            Buy custom-built irritation packages and launch them directly onto your competitors' pitches. Pay to win. Play to annoy.
+            Mua các gói gây ức chế được thiết kế riêng và phóng chúng trực tiếp lên bài đăng của đối thủ cạnh tranh. Trả tiền để thắng. Chơi để chọc tức.
           </p>
         </div>
 
@@ -136,8 +136,8 @@ export default function SabotageStorePage() {
           <div className={styles.successBanner} data-testid="checkout-success-banner">
             <span className={styles.bannerIcon}>✅</span>
             <div className={styles.bannerTextContainer}>
-              <h4 className={styles.bannerTitle}>Transaction Successful!</h4>
-              <p className={styles.bannerMessage}>Your account has been charged. Sabotage Pack tokens added to your arsenal.</p>
+              <h4 className={styles.bannerTitle}>Giao dịch thành công!</h4>
+              <p className={styles.bannerMessage}>Tài khoản của bạn đã bị trừ tiền. Các thẻ Gói Phá hoại đã được thêm vào kho vũ khí của bạn.</p>
             </div>
             <button className={styles.closeBannerBtn} onClick={() => setShowSuccess(false)}>×</button>
           </div>
@@ -147,8 +147,8 @@ export default function SabotageStorePage() {
           <div className={styles.cancelBanner} data-testid="checkout-cancel-banner">
             <span className={styles.bannerIcon}>❌</span>
             <div className={styles.bannerTextContainer}>
-              <h4 className={styles.bannerTitle}>Transaction Cancelled</h4>
-              <p className={styles.bannerMessage}>Checkout was cancelled. No charges were made. Play nice... or try again.</p>
+              <h4 className={styles.bannerTitle}>Giao dịch đã hủy</h4>
+              <p className={styles.bannerMessage}>Quá trình thanh toán đã bị hủy. Không có khoản phí nào được tính. Hãy chơi đẹp... hoặc thử lại.</p>
             </div>
             <button className={styles.closeBannerBtn} onClick={() => setShowCanceled(false)}>×</button>
           </div>
@@ -156,11 +156,11 @@ export default function SabotageStorePage() {
 
         {/* User Inventory Display */}
         <div className={styles.inventorySection} data-testid="user-inventory">
-          <h3 className={styles.inventoryTitle}>Your Sabotage Arsenal</h3>
+          <h3 className={styles.inventoryTitle}>Kho vũ khí Phá hoại của bạn</h3>
           <div className={styles.inventoryGrid}>
             <div className={styles.inventoryItem} data-testid="inv-blur">
               <span className={styles.inventoryEmoji}>🌫️</span>
-              <span className={styles.inventoryName}>Blur:</span>
+              <span className={styles.inventoryName}>Làm mờ:</span>
               <span className={styles.inventoryCount}>{inventory.blur}</span>
             </div>
             <div className={styles.inventoryItem} data-testid="inv-comic_sans">
@@ -175,7 +175,7 @@ export default function SabotageStorePage() {
             </div>
             <div className={styles.inventoryItem} data-testid="inv-deduct_calories">
               <span className={styles.inventoryEmoji}>⚡</span>
-              <span className={styles.inventoryName}>Calories deduction:</span>
+              <span className={styles.inventoryName}>Trừ Calo:</span>
               <span className={styles.inventoryCount}>{inventory.deduct_calories}</span>
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function SabotageStorePage() {
       </main>
 
       <footer className={styles.pageFooter}>
-        <p>© {new Date().getFullYear()} Troll Capitalism Inc. No refunds. Complaining reduces calories.</p>
+        <p>© {new Date().getFullYear()} Troll Capitalism Inc. Không hoàn tiền. Khiếu nại sẽ làm giảm calo.</p>
       </footer>
     </div>
   );

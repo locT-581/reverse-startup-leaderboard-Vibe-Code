@@ -14,35 +14,35 @@ async function main() {
   // Insert Sabotage Packs seed data
   await db.insert(sabotagePacks).values([
     {
-      name: 'Blur Pack',
-      description: "Make a competitor's post blurry and completely unreadable. Pure frustration guaranteed.",
+      name: 'Gói Làm mờ',
+      description: "Làm cho bài đăng của đối thủ bị mờ đi và hoàn toàn không thể đọc được. Đảm bảo mang lại sự ức chế tột độ.",
       price: 99, // $0.99
       effectType: 'blur',
     },
     {
-      name: 'Comic Sans Pack',
-      description: "Force a rival's post to render in Comic Sans. Strip away all their corporate dignity.",
+      name: 'Gói Comic Sans',
+      description: "Bắt buộc bài đăng của đối thủ hiển thị bằng phông chữ Comic Sans. Tước bỏ mọi phẩm giá doanh nghiệp của họ.",
       price: 199, // $1.99
       effectType: 'comic_sans',
     },
     {
-      name: 'Papyrus Pack',
-      description: "Force a rival's post to render in Papyrus font. Bring ancient, chaotic typography to their pitch.",
+      name: 'Gói Papyrus',
+      description: "Bắt buộc bài đăng của đối thủ hiển thị bằng phông chữ Papyrus. Mang phong cách chữ cổ đại, hỗn loạn vào bài thuyết trình của họ.",
       price: 199, // $1.99
       effectType: 'papyrus',
     },
     {
-      name: 'Calories Deduction Pack',
-      description: 'Deduct 500 Wasted Calories from a target post. Drop them down the leaderboard in an instant.',
+      name: 'Gói Trừ Calo',
+      description: 'Khấu trừ 500 Calo lãng phí từ một bài đăng mục tiêu. Kéo tụt hạng của họ trên bảng xếp hạng ngay lập tức.',
       price: 499, // $4.99
       effectType: 'deduct_calories',
     },
   ]);
   console.log('Created mock sabotage packs.');
-
+ 
   // Hash passwords
   const passwordHash = await bcrypt.hash('password123', 10);
-
+ 
   // Create mock users
   const [user1, user2, user3] = await db.insert(users).values([
     {
@@ -67,40 +67,40 @@ async function main() {
       logicViolations: 0,
     },
   ]).returning();
-
+ 
   console.log('Created mock users.');
-
+ 
   // Use the helper from leaderboard service to avoid duplication (DRY)
   const calculateScore = calculateScoreHelper;
-
+ 
   const postContents = [
     {
-      title: 'Quick Update',
-      content: 'We are pivoting. No questions asked. Just trust the process!',
+      title: 'Cập nhật nhanh',
+      content: 'Chúng tôi đang pivoting. Không cần hỏi nhiều. Hãy tin tưởng vào quy trình!',
       authorId: user1.id,
     },
     {
-      title: 'Clean Architecture implementation details',
-      content: 'Check out our clean architecture:\n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nIt is extremely clean and scalable.',
+      title: 'Chi tiết triển khai Clean Architecture',
+      content: 'Hãy xem clean architecture cực kỳ sạch sẽ của chúng tôi:\n```typescript\nconst add = (a: number, b: number) => a + b;\n```\nNó cực kỳ sạch và có khả năng scale.',
       authorId: user2.id,
     },
     {
-      title: 'I AM FREAKING OUT NOW',
-      content: 'WHY IS THE DEPLOYMENT FAILING AGAIN?! THIS IS TOTALLY UNACCEPTABLE! OUR CLIENTS ARE LEAVING! HELP...',
+      title: 'TÔI ĐANG PHÁT ĐIÊN LÊN ĐÂY',
+      content: 'TẠI SAO VIỆC DEPLOY LẠI THẤT BẠI NỮA RỒI?! ĐIỀU NÀY HOÀN TOÀN KHÔNG THỂ CHẤP NHẬN ĐƯỢC! KHÁCH HÀNG ĐANG RỜI BỎ CHÚNG TA! CỨU...',
       authorId: user3.id,
     },
     {
-      title: 'The Ultimate Guide to Synergy',
-      content: 'We need to leverage our synergy to align our core competencies and optimize our bandwidth. By scaling our paradigms and disruptive thinking, we will establish a high-performing ecosystem. Let\'s deep dive into the KPIs and OKRs that will drive our pivot. We must ensure that our deliverables are decoupled and cloud-native. This is the only way to monetize our microservices and achieve a paradigm shift. We need to run a sprint to address the low-hanging fruits. This is a game-changer! Our roadmap must be agile and customer-centric. Let\'s touch base next week to align on the action items. We should take this offline and circle back. At the end of the day, it is about the bottom line and bandwidth. We need to think outside the box and push the envelope. This is a win-win situation for all stakeholders. Let\'s hit the ground running and make it happen! Can you double check the server logs? I need to make sure we are not dropping packets. This is critical for our MVP launch. We cannot afford any downtime at this stage! Let\'s get to work now.',
+      title: 'Cẩm nang tối thượng về Synergy',
+      content: 'Chúng ta cần leverage synergy của mình để căn chỉnh core competencies và tối ưu hóa bandwidth. Bằng cách scale các paradigm và disruptive thinking của mình, chúng ta sẽ thiết lập một ecosystem hiệu suất cao. Hãy deep dive vào các KPI và OKR để thúc đẩy việc pivot của chúng ta. Chúng ta phải đảm bảo rằng các deliverables của mình được decoupled và cloud-native. Đây là cách duy nhất để monetize các microservices của chúng ta và đạt được paradigm shift. Chúng ta cần chạy một sprint để giải quyết các low-hanging fruits. Đây thực sự là một game-changer! Lộ trình của chúng ta phải agile và customer-centric. Hãy touch base vào tuần tới để thống nhất các hành động. Chúng ta nên mang việc này offline và circle back sau. Cuối cùng thì tất cả là về bottom line và bandwidth. Chúng ta cần suy nghĩ sáng tạo và bứt phá giới hạn. Đây là tình huống win-win cho mọi bên liên quan. Hãy bắt đầu ngay và làm cho nó thành công! Bạn có thể kiểm tra kỹ nhật ký máy chủ không? Tôi cần đảm bảo chúng ta không bị rớt gói tin. Điều này rất quan trọng đối với lần ra mắt MVP của chúng ta. Chúng ta không thể để xảy ra bất kỳ thời gian chết nào ở giai đoạn này! Hãy bắt đầu làm việc ngay bây giờ.',
       authorId: user1.id,
     },
     {
-      title: 'MICROSERVICE ARCHITECTURE SHAKEUP',
-      content: 'HELLO TEAM, WE ARE REFACTORING EVERYTHING TO MICROSERVICES TODAY!!!\n\nHere is the new config:\n```yaml\nservices:\n  auth:\n    image: auth-service:latest\n  leaderboard:\n    image: leaderboard:latest\n```\n\nWE MUST DEPLOY THIS RIGHT NOW TO PREVENT DISASTER! DOES ANYONE HAVE QUESTIONS?! IF NOT, JUST MERGE IT AND RUN! DO NOT DELAY OR WE ARE DOOMED!!!',
+      title: 'CẢI TỔ TOÀN DIỆN KIẾN TRÚC MICROSERVICES',
+      content: 'CHÀO CẢ NHÓM, CHÚNG TA SẼ REFACTOR TẤT CẢ SANG MICROSERVICES NGAY HÔM NAY!!!\n\nĐây là cấu hình mới:\n```yaml\nservices:\n  auth:\n    image: auth-service:latest\n  leaderboard:\n    image: leaderboard:latest\n```\n\nCHÚNG TA PHẢI DEPLOY CÁI NÀY NGAY LẬP TỨC ĐỂ TRÁNH THẢM HỌA! CÓ AI CÓ CÂU HỎI GÌ KHÔNG?! NẾU KHÔNG THÌ CHỈ CẦN MERGE VÀ CHẠY! KHÔNG ĐƯỢC CHẬM TRỄ HOẶC CHÚNG TA SẼ TIÊU TÙNG!!!',
       authorId: user2.id,
     },
   ];
-
+ 
   for (const postData of postContents) {
     const wastedCalories = calculateScore(postData.content);
     await db.insert(posts).values({
@@ -110,7 +110,7 @@ async function main() {
       authorId: postData.authorId,
     });
   }
-
+ 
   console.log('Database seeded successfully!');
   process.exit(0);
 }

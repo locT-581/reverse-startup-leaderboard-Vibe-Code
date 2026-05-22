@@ -5,7 +5,7 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     const contextA = await browser.newContext();
     const pageA = await contextA.newPage();
     await pageA.goto('/auth');
-    await pageA.click('button:has-text("Register now")');
+    await pageA.click('button:has-text("Đăng ký ngay")');
     const userA = `sharerA_${Date.now()}`;
     await pageA.fill('#username', userA);
     await pageA.fill('#password', 'password123');
@@ -37,7 +37,7 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     });
 
     await pageB.goto('/auth');
-    await pageB.click('button:has-text("Register now")');
+    await pageB.click('button:has-text("Đăng ký ngay")');
     const userB = `sharerB_${Date.now()}`;
     await pageB.fill('#username', userB);
     await pageB.fill('#password', 'password123');
@@ -48,7 +48,7 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     const shareProfileBtn = pageB.locator('[data-testid="share-profile-btn"]');
     await expect(shareProfileBtn).toBeVisible();
     await shareProfileBtn.click();
-    await expect(shareProfileBtn).toHaveText('Copied! ✓');
+    await expect(shareProfileBtn).toHaveText('Đã sao chép! ✓');
     
     // Evaluate clipboard text
     const profileLink = await pageB.evaluate(() => (window as any).lastCopiedText);
@@ -57,20 +57,20 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     // Create a post as User B
     const uniqueTitle = `Synergy Leverage Share Title ${Date.now()}`;
     await pageB.goto('/');
-    await pageB.click('button:has-text("Propose a Paradigm")');
+    await pageB.click('button:has-text("💡 Đề xuất một Hệ hình")');
     await pageB.fill('#post-title-input', uniqueTitle);
     const validContent = 'This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.';
     await pageB.fill('#post-content-input', validContent);
-    await pageB.click('button:has-text("Propose Paradigm")');
+    await pageB.click('button:has-text("Đề xuất Mô hình")');
 
     // Solve Ad Captcha
-    await expect(pageB.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(pageB.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const adText = await pageB.locator('#sponsor-ad-text').textContent();
     await pageB.fill('#ad-verification-input', adText!);
-    await pageB.click('button:has-text("Verify & Submit")');
+    await pageB.click('button:has-text("Xác minh & Gửi")');
 
     // Wait for modal to close
-    await expect(pageB.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    await expect(pageB.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible({ timeout: 5000 });
 
     // Locate User B's post on User B's page (to test Post Share button)
     const row = pageB.locator(`div[class*="postRowWrapper"]:has-text("${userB}")`);
@@ -78,7 +78,7 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     const sharePostBtn = row.locator('[data-testid="share-post-btn"]');
     await expect(sharePostBtn).toBeVisible();
     await sharePostBtn.click();
-    await expect(sharePostBtn).toHaveText('Copied! ✓');
+    await expect(sharePostBtn).toHaveText('Đã sao chép! ✓');
 
     const postLink = await pageB.evaluate(() => (window as any).lastCopiedText);
     expect(postLink).toContain('/posts/');
@@ -94,15 +94,15 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     // Go directly to public profile
     await unauthPage.goto(`/profile/${userB}`);
     await expect(unauthPage.locator('h1')).toContainText(userB);
-    await expect(unauthPage.locator('text="Wasted Calories"')).toBeVisible();
-    await expect(unauthPage.locator('text="Logic Violations"')).toBeVisible();
+    await expect(unauthPage.locator('text="Calo lãng phí"')).toBeVisible();
+    await expect(unauthPage.locator('text="Vi phạm logic"')).toBeVisible();
     
     // Check that there is no clown hat yet
     const profileAvatar = unauthPage.locator('div[class*="avatarDisplay"]');
     await expect(profileAvatar).not.toHaveClass(/.*penalizedAvatar.*/);
 
     // Test back to leaderboard link
-    const backBtn = unauthPage.locator('a:has-text("Back to Leaderboard")');
+    const backBtn = unauthPage.locator('a:has-text("Quay lại Bảng xếp hạng")');
     await expect(backBtn).toBeVisible();
     await backBtn.click();
     await expect(unauthPage).toHaveURL(/\/$/);
@@ -117,7 +117,7 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     await expect(postAvatar).not.toHaveClass(/.*penalizedAvatar.*/);
 
     // Test back to leaderboard link from post page
-    const postBackBtn = unauthPage.locator('a:has-text("Back to Leaderboard")');
+    const postBackBtn = unauthPage.locator('a:has-text("Quay lại Bảng xếp hạng")');
     await expect(postBackBtn).toBeVisible();
     await postBackBtn.click();
     await expect(unauthPage).toHaveURL(/\/$/);
@@ -128,7 +128,7 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     await expect(rowA).toBeVisible();
     const violationsBadge = rowA.locator('span[class*="violationsBadge"]');
     for (let i = 0; i < 5; i++) {
-      const reportBtn = rowA.locator('button:has-text("Report Logic 🚨")');
+      const reportBtn = rowA.locator('button:has-text("Báo cáo Logic 🚨")');
       await expect(reportBtn).toBeVisible();
       await reportBtn.click();
       await expect(violationsBadge).toHaveText(`🚨 ${i + 1}`);
@@ -138,13 +138,13 @@ test.describe('Viral Sharing & Dynamic Previews E2E Flow', () => {
     await unauthPage.goto(`/profile/${userB}`);
     await expect(profileAvatar).toHaveClass(/.*penalizedAvatar.*/);
     const profileSrOnly = unauthPage.locator('h1[class*="title"] span[class*="srOnly"]');
-    await expect(profileSrOnly).toHaveText(' (Penalized with a clown hat)');
+    await expect(profileSrOnly).toHaveText(' (Bị phạt với mũ chú hề)');
 
     // Verify clown hat active on public post page
     await unauthPage.goto(`/posts/${postId}`);
     await expect(postAvatar).toHaveClass(/.*penalizedAvatar.*/);
     const postSrOnly = unauthPage.locator('span[class*="authorName"] span[class*="srOnly"]');
-    await expect(postSrOnly).toHaveText(' (Penalized with a clown hat)');
+    await expect(postSrOnly).toHaveText(' (Bị phạt với mũ chú hề)');
 
     // Clean up
     await contextA.close();

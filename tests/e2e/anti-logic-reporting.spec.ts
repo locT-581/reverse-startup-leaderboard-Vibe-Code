@@ -6,7 +6,7 @@ test.describe('Anti-Logic Reporting E2E Flow', () => {
     const contextA = await browser.newContext();
     const pageA = await contextA.newPage();
     await pageA.goto('/auth');
-    await pageA.click('button:has-text("Register now")');
+    await pageA.click('button:has-text("Đăng ký ngay")');
     const userA = `userA_${Date.now()}`;
     await pageA.fill('#username', userA);
     await pageA.fill('#password', 'password123');
@@ -15,26 +15,26 @@ test.describe('Anti-Logic Reporting E2E Flow', () => {
 
     // 2. User A creates a post
     await pageA.goto('/');
-    await pageA.click('button:has-text("Propose a Paradigm")');
+    await pageA.click('button:has-text("💡 Đề xuất một Hệ hình")');
     await pageA.fill('#post-title-input', `Synergy Paradigm Title ${Date.now()}`);
     const validContent = 'This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.';
     await pageA.fill('#post-content-input', validContent);
-    await pageA.click('button:has-text("Propose Paradigm")');
+    await pageA.click('button:has-text("Đề xuất Mô hình")');
 
     // Solve Ad Captcha
-    await expect(pageA.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(pageA.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const adText = await pageA.locator('#sponsor-ad-text').textContent();
     await pageA.fill('#ad-verification-input', adText!);
-    await pageA.click('button:has-text("Verify & Submit")');
+    await pageA.click('button:has-text("Xác minh & Gửi")');
 
     // Wait for modal to close
-    await expect(pageA.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    await expect(pageA.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible({ timeout: 5000 });
 
     // 3. Setup User B context and page
     const contextB = await browser.newContext();
     const pageB = await contextB.newPage();
     await pageB.goto('/auth');
-    await pageB.click('button:has-text("Register now")');
+    await pageB.click('button:has-text("Đăng ký ngay")');
     const userB = `userB_${Date.now()}`;
     await pageB.fill('#username', userB);
     await pageB.fill('#password', 'password123');
@@ -52,8 +52,8 @@ test.describe('Anti-Logic Reporting E2E Flow', () => {
     const violationsBadge = row.locator('span[class*="violationsBadge"]');
     await expect(violationsBadge).toHaveText('🚨 0');
 
-    // Click "Report Logic 🚨" on User A's post
-    const reportBtn = row.locator('button:has-text("Report Logic 🚨")');
+    // Click "Báo cáo Logic 🚨" on User A's post
+    const reportBtn = row.locator('button:has-text("Báo cáo Logic 🚨")');
     await expect(reportBtn).toBeVisible();
     await reportBtn.click();
 
@@ -66,14 +66,14 @@ test.describe('Anti-Logic Reporting E2E Flow', () => {
     await expect(violationsBadgeA).toHaveText('🚨 1');
 
     // 6. User A attempts to self-report
-    const reportBtnA = rowA.locator('button:has-text("Report Logic 🚨")');
+    const reportBtnA = rowA.locator('button:has-text("Báo cáo Logic 🚨")');
     await expect(reportBtnA).toBeVisible();
     await reportBtnA.click();
 
     // Verify error message is rendered
     const errorMsg = rowA.locator('span[class*="reportErrorMsg"]');
     await expect(errorMsg).toBeVisible();
-    await expect(errorMsg).toHaveText("⚠️ Why are you reporting yourself? That's too logical, stop it!");
+    await expect(errorMsg).toHaveText("⚠️ Tại sao bạn lại tự báo cáo chính mình? Làm vậy quá logic đấy, dừng lại đi!");
 
     // Verify count did not increment (remains 🚨 1)
     await expect(violationsBadgeA).toHaveText('🚨 1');

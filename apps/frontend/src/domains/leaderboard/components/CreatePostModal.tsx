@@ -79,7 +79,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
         onClose();
       }, 1500);
     } else {
-      const errMsg = res.error?.message || 'Failed to propose paradigm.';
+      const errMsg = res.error?.message || 'Đề xuất mô hình thất bại.';
       setSubmitError(errMsg);
       throw new Error(errMsg);
     }
@@ -100,15 +100,15 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
       >
         <div className={styles.header}>
           <div className={styles.titleContainer}>
-            <h2 id="modal-title" className={styles.title}>Propose a Paradigm</h2>
+            <h2 id="modal-title" className={styles.title}>Đề xuất một Mô hình</h2>
             <p className={styles.subtitle}>
-              Share your most convoluted, scale-ready ideas. Real-time synergy will be calculated.
+              Chia sẻ những ý tưởng phức tạp, sẵn sàng mở rộng (scale) nhất của bạn. Sự đồng bộ (synergy) thời gian thực sẽ được tính toán.
             </p>
           </div>
           <button
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label="Đóng cửa sổ"
           >
             &times;
           </button>
@@ -121,10 +121,10 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
               id="post-title-input"
               value={title}
               onChange={setTitle}
-              placeholder="e.g. leverage synergy scale paradigm"
+              placeholder="ví dụ: leverage synergy scale paradigm"
               validationType="title"
               onErrorChange={setTitleError}
-              label="Paradigm Title"
+              label="Tiêu đề Mô hình"
             />
 
             <HostileInput
@@ -132,10 +132,10 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
               id="post-content-input"
               value={content}
               onChange={setContent}
-              placeholder="e.g. Pivot our cloud-native microservices ecosystem to touch base on deliverables..."
+              placeholder="ví dụ: Pivot our cloud-native microservices ecosystem to touch base on deliverables..."
               validationType="content"
               onErrorChange={setContentError}
-              label="Convoluted Explanation"
+              label="Giải thích phức tạp"
             />
 
             {submitError && (
@@ -146,7 +146,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
 
             {submitSuccess && (
               <div className={`${styles.message} ${styles.success}`} role="alert">
-                🎉 Paradigm successfully proposed! The leaderboard will update momentarily.
+                🎉 Đề xuất mô hình thành công! Bảng xếp hạng sẽ sớm cập nhật.
               </div>
             )}
 
@@ -157,14 +157,14 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 onClick={onClose}
                 disabled={isSubmitting}
               >
-                Cancel
+                Hủy
               </button>
               <button
                 type="submit"
                 className={styles.submitBtn}
                 disabled={isButtonDisabled}
               >
-                {isSubmitting ? 'Proposing...' : 'Propose Paradigm'}
+                {isSubmitting ? 'Đang đề xuất...' : 'Đề xuất Mô hình'}
               </button>
             </div>
           </form>

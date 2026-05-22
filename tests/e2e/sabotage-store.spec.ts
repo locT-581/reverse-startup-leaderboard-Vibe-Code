@@ -8,7 +8,7 @@ test.describe('Sabotage Storefront E2E Flow', () => {
   test('should navigate to storefront from profile, buy a pack (mock), and return to leaderboard', async ({ page }) => {
     // 1. Register a new user
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     const uniqueUsername = `saboteur_${Date.now()}`;
     await page.fill('#username', uniqueUsername);
     await page.fill('#password', 'pass1234');
@@ -25,29 +25,29 @@ test.describe('Sabotage Storefront E2E Flow', () => {
 
     // 4. Verify we are on /sabotage-store page
     await expect(page).toHaveURL(/\/sabotage-store/);
-    await expect(page.locator('h1')).toHaveText('Sabotage Store');
-    await expect(page.locator('h2')).toHaveText('Troll Capitalism');
+    await expect(page.locator('h1')).toHaveText('Cửa hàng Phá hoại');
+    await expect(page.locator('h2')).toHaveText('Chủ nghĩa Tư bản Trêu đùa');
 
     // 5. Verify the 4 MVP Sabotage Packs exist
     const blurCard = page.locator('[data-testid="sabotage-card-blur"]');
     await expect(blurCard).toBeVisible();
-    await expect(blurCard.locator('h3')).toHaveText('Blur Pack');
-    await expect(blurCard.locator('p')).toContainText('blurry');
+    await expect(blurCard.locator('h3')).toHaveText('Gói Làm mờ');
+    await expect(blurCard.locator('p')).toContainText('mờ');
     await expect(blurCard.locator('span')).toHaveText('$0.99');
 
     const comicCard = page.locator('[data-testid="sabotage-card-comic_sans"]');
     await expect(comicCard).toBeVisible();
-    await expect(comicCard.locator('h3')).toHaveText('Comic Sans Pack');
+    await expect(comicCard.locator('h3')).toHaveText('Gói Comic Sans');
     await expect(comicCard.locator('span')).toHaveText('$1.99');
 
     const papyrusCard = page.locator('[data-testid="sabotage-card-papyrus"]');
     await expect(papyrusCard).toBeVisible();
-    await expect(papyrusCard.locator('h3')).toHaveText('Papyrus Pack');
+    await expect(papyrusCard.locator('h3')).toHaveText('Gói Papyrus');
     await expect(papyrusCard.locator('span')).toHaveText('$1.99');
 
     const caloriesCard = page.locator('[data-testid="sabotage-card-deduct_calories"]');
     await expect(caloriesCard).toBeVisible();
-    await expect(caloriesCard.locator('h3')).toHaveText('Calories Deduction Pack');
+    await expect(caloriesCard.locator('h3')).toHaveText('Gói Trừ Calo');
     await expect(caloriesCard.locator('span')).toHaveText('$4.99');
 
     // 6. Check that clicking "Buy Now" on Blur Pack redirects and completes transaction via Mock mode

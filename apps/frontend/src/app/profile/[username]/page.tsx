@@ -25,26 +25,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!response.success || !response.data) {
     return {
-      title: 'User Not Found | Reverse Startup',
-      description: 'The requested user profile does not exist in the Hall of Inefficiency.',
+      title: 'Không tìm thấy người dùng | Khởi nghiệp Ngược',
+      description: 'Hồ sơ người dùng được yêu cầu không tồn tại trong Sảnh Đường Kém Hiệu Quả.',
     };
   }
 
   const profile = response.data;
-  const description = `${profile.username} has wasted ${profile.wastedCalories} kcal on overengineered paradigms with ${profile.logicViolations} logic violations.`;
+  const description = `${profile.username} đã lãng phí ${profile.wastedCalories} kcal cho các hệ hình overengineer với ${profile.logicViolations} lần vi phạm logic.`;
 
   return {
-    title: `${profile.username}'s Profile | Reverse Startup`,
+    title: `Hồ sơ của ${profile.username} | Khởi nghiệp Ngược`,
     description,
     openGraph: {
-      title: `${profile.username}'s Inefficiency Profile`,
+      title: `Hồ sơ Kém Hiệu Quả của ${profile.username}`,
       description,
       type: 'profile',
       username: profile.username,
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${profile.username}'s Inefficiency Profile`,
+      title: `Hồ sơ Kém Hiệu Quả của ${profile.username}`,
       description,
     }
   };
@@ -67,7 +67,7 @@ export default async function PublicProfilePage({ params }: Props) {
     <div className={styles.container}>
       <div className={styles.card}>
         <Link href="/" className={styles.backLink}>
-          ← Back to Leaderboard
+          ← Quay lại Bảng xếp hạng
         </Link>
         <div className={styles.header}>
           <div
@@ -75,7 +75,7 @@ export default async function PublicProfilePage({ params }: Props) {
             role="img"
             aria-label={
               isPenalized
-                ? `${profile.avatar} - penalized with a clown hat`
+                ? `${profile.avatar} - bị phạt với mũ chú hề`
                 : profile.avatar
             }
           >
@@ -83,18 +83,18 @@ export default async function PublicProfilePage({ params }: Props) {
           </div>
           <h1 className={styles.title}>
             {profile.username}
-            {isPenalized && <span className={styles.srOnly}> (Penalized with a clown hat)</span>}
-            {profile.isMercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '6px' }}>👶</span>}
+            {isPenalized && <span className={styles.srOnly}> (Bị phạt với mũ chú hề)</span>}
+            {profile.isMercyActive && <span title="Chế độ Trẻ chập chững đang hoạt động" style={{ marginLeft: '6px' }}>👶</span>}
           </h1>
         </div>
 
         <div className={styles.statsGrid}>
           <div className={styles.statBox}>
-            <div className={styles.statLabel}>Wasted Calories</div>
+            <div className={styles.statLabel}>Calo lãng phí</div>
             <div className={styles.statVal}>{profile.wastedCalories} kcal</div>
           </div>
           <div className={styles.statBox}>
-            <div className={styles.statLabel}>Logic Violations</div>
+            <div className={styles.statLabel}>Vi phạm logic</div>
             <div className={styles.statVal}>{profile.logicViolations}</div>
           </div>
         </div>
@@ -102,11 +102,11 @@ export default async function PublicProfilePage({ params }: Props) {
         <div className={styles.badgeSection}>
           {isPenalized ? (
             <div className={styles.badgePenalty}>
-              🤡 Logic Violations Threshold Reached: Clown Hat Overlay Active!
+              🤡 Đã đạt ngưỡng vi phạm logic: Kích hoạt lớp phủ mũ chú hề!
             </div>
           ) : (
             <div className={styles.badgeGood}>
-              ✅ Logic Violations are below threshold. No clown hat.
+              ✅ Số lần vi phạm logic dưới ngưỡng. Không có mũ chú hề.
             </div>
           )}
         </div>

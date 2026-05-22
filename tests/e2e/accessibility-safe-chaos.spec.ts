@@ -7,27 +7,27 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
 
   async function registerAndCreatePost(page: Page, username: string, title: string) {
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     await page.fill('#username', username);
     await page.fill('#password', 'securePassword123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/profile/);
 
     await page.goto('/');
-    await page.click('button:has-text("Propose a Paradigm")');
+    await page.click('button:has-text("💡 Đề xuất một Hệ hình")');
     const titleInput = page.locator('#post-title-input');
     const contentInput = page.locator('#post-content-input');
     await titleInput.fill(title);
     await contentInput.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-    await page.click('button:has-text("Propose Paradigm")');
+    await page.click('button:has-text("Đề xuất Mô hình")');
 
-    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const postAdText = await page.locator('#sponsor-ad-text').textContent();
     expect(postAdText).not.toBeNull();
     await page.fill('#ad-verification-input', postAdText!);
-    await page.click('button:has-text("Verify & Submit")');
+    await page.click('button:has-text("Xác minh & Gửi")');
 
-    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible();
+    await expect(page.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible();
   }
 
   test('Test Case 1 (Reduced Motion Evasive Button): should not translate and vote in single click', async ({ browser }) => {
@@ -44,7 +44,7 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
 
     // Register User B (voter)
     await pageB.goto('/auth');
-    await pageB.click('button:has-text("Register now")');
+    await pageB.click('button:has-text("Đăng ký ngay")');
     await pageB.fill('#username', `red_voter_${suffix}`);
     await pageB.fill('#password', 'securePassword123');
     await pageB.click('button[type="submit"]');
@@ -83,19 +83,19 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
 
     const suffix = `${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     await page.fill('#username', `red_captcha_${suffix}`);
     await page.fill('#password', 'securePassword123');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/profile/);
 
     await page.goto('/');
-    await page.click('button:has-text("Propose a Paradigm")');
+    await page.click('button:has-text("💡 Đề xuất một Hệ hình")');
     await page.fill('#post-title-input', `Captcha reduced motion pivot leverage ${suffix}`);
     await page.fill('#post-content-input', 'This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-    await page.click('button:has-text("Propose Paradigm")');
+    await page.click('button:has-text("Đề xuất Mô hình")');
 
-    const skipBtn = page.locator('button:has-text("Skip Ad")');
+    const skipBtn = page.locator('button:has-text("Bỏ qua quảng cáo")');
     await expect(skipBtn).toBeVisible();
 
     // Hover/mousemove the skip button
@@ -126,7 +126,7 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
 
     // Register User B
     await pageB.goto('/auth');
-    await pageB.click('button:has-text("Register now")');
+    await pageB.click('button:has-text("Đăng ký ngay")');
     await pageB.fill('#username', userB);
     await pageB.fill('#password', 'securePassword123');
     await pageB.click('button[type="submit"]');
@@ -143,14 +143,14 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
     const postRowB = pageB.locator('div[class*="postRowWrapper"]', { hasText: postTitle });
     await expect(postRowB).toBeVisible();
 
-    await postRowB.locator('button:has-text("Sabotage 😈")').click();
-    await expect(pageB.locator('h2:has-text("Sabotage Paradigm")')).toBeVisible();
-    await pageB.locator('div[class*="inventoryCard"]').filter({ hasText: 'Blur Pack' }).click();
-    await pageB.locator('button:has-text("Deploy")').click();
+    await postRowB.locator('button:has-text("Phá hoại 😈")').click();
+    await expect(pageB.locator('h2:has-text("Phá hoại Mô hình 😈")')).toBeVisible();
+    await pageB.locator('div[class*="inventoryCard"]').filter({ hasText: 'Gói Làm mờ' }).click();
+    await pageB.locator('button:has-text("Kích hoạt")').click();
 
     // Wait for deploy confirmation and modal closing
-    await expect(pageB.locator('text=Sabotage deployed successfully!')).toBeVisible();
-    await expect(pageB.locator('h2:has-text("Sabotage Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    await expect(pageB.locator('text=Đã kích hoạt phá hoại thành công!')).toBeVisible();
+    await expect(pageB.locator('h2:has-text("Phá hoại Mô hình 😈")')).not.toBeVisible({ timeout: 5000 });
 
     // Verify row level distortion class is applied
     const postRowElement = postRowB.locator('div[class*="postRow"]:not([class*="postRowWrapper"])');
@@ -172,7 +172,7 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
     await expect(srOnlyText).toBeVisible();
     
     const textContent = await srOnlyText.textContent();
-    expect(textContent).toContain(`Innovator: ${userA}`);
+    expect(textContent).toContain(`Nhà đổi mới: ${userA}`);
     expect(textContent).toContain(postTitle);
 
     await contextA.close();
@@ -192,7 +192,7 @@ test.describe('Safe-Chaos & Accessibility E2E tests', () => {
 
     // Register User B (voter)
     await pageB.goto('/auth');
-    await pageB.click('button:has-text("Register now")');
+    await pageB.click('button:has-text("Đăng ký ngay")');
     await pageB.fill('#username', `kb_voter_${suffix}`);
     await pageB.fill('#password', 'securePassword123');
     await pageB.click('button[type="submit"]');

@@ -16,27 +16,27 @@ interface SabotageSelectionModalProps {
 const SABOTAGE_TYPES = [
   {
     effectType: 'blur',
-    name: 'Blur Pack',
-    description: "Blurs the targeted user's screen and their post on the leaderboard.",
-    effect: 'Deducts 100 kcal',
+    name: 'Gói Làm mờ',
+    description: "Làm mờ bài đăng của đối thủ trên bảng xếp hạng và toàn bộ màn hình của họ.",
+    effect: 'Khấu trừ 100 kcal',
   },
   {
     effectType: 'comic_sans',
-    name: 'Comic Sans Pack',
-    description: "Forces the targeted user's UI to render in Comic Sans.",
-    effect: 'Deducts 150 kcal',
+    name: 'Gói Comic Sans',
+    description: "Bắt buộc giao diện người dùng của đối thủ hiển thị bằng phông chữ Comic Sans.",
+    effect: 'Khấu trừ 150 kcal',
   },
   {
     effectType: 'papyrus',
-    name: 'Papyrus Pack',
-    description: "Forces the targeted user's UI to render in Papyrus.",
-    effect: 'Deducts 150 kcal',
+    name: 'Gói Papyrus',
+    description: "Bắt buộc giao diện người dùng của đối thủ hiển thị bằng phông chữ Papyrus.",
+    effect: 'Khấu trừ 150 kcal',
   },
   {
     effectType: 'deduct_calories',
-    name: 'Calories Deduction',
-    description: "A heavy direct hit to the target post's wasted calories.",
-    effect: 'Deducts 500 kcal',
+    name: 'Gói Trừ Calo',
+    description: "Khấu trừ trực tiếp 500 Calo lãng phí từ bài đăng mục tiêu.",
+    effect: 'Khấu trừ 500 kcal',
   },
 ] as const;
 
@@ -93,7 +93,7 @@ export default function SabotageSelectionModal({
           });
           setInventory(invMap);
         } else {
-          setError(res.error?.message || 'Failed to fetch inventory.');
+          setError(res.error?.message || 'Tải kho đồ thất bại.');
         }
       });
     }
@@ -122,7 +122,7 @@ export default function SabotageSelectionModal({
           onClose();
         }, 1500);
       } else {
-        setError(res.error?.message || 'Failed to deploy sabotage.');
+        setError(res.error?.message || 'Kích hoạt phá hoại thất bại.');
       }
     });
   };
@@ -143,16 +143,16 @@ export default function SabotageSelectionModal({
         <div className={styles.header}>
           <div className={styles.titleContainer}>
             <h2 id="sabotage-modal-title" className={styles.title}>
-              Sabotage Paradigm 😈
+              Phá hoại Mô hình 😈
             </h2>
             <p className={styles.subtitle}>
-              Deploy a visual disruption against <strong>{postTitle}</strong>.
+              Kích hoạt sự hỗn loạn thị giác chống lại <strong>{postTitle}</strong>.
             </p>
           </div>
           <button
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label="Đóng cửa sổ"
             disabled={isDeploying}
           >
             &times;
@@ -168,24 +168,24 @@ export default function SabotageSelectionModal({
 
           {success && (
             <div className={`${styles.message} ${styles.success}`} role="alert">
-              🎉 Sabotage deployed successfully! Score has been deducted.
+              🎉 Đã kích hoạt phá hoại thành công! Calo đã bị khấu trừ.
             </div>
           )}
 
           {isPending ? (
             <div className={styles.loadingContainer}>
               <div className={styles.spinner} role="status"></div>
-              <p>Opening your arsenal...</p>
+              <p>Đang mở kho vũ khí của bạn...</p>
             </div>
           ) : (
             <div className={styles.inventorySection}>
               {totalInventoryCount === 0 ? (
                 <div className={styles.emptyState}>
                   <p className={styles.emptyText}>
-                    Nice try, but your arsenal is empty. Visit the store to buy some power first!
+                    Nỗ lực tốt đấy, nhưng kho vũ khí của bạn trống rỗng. Hãy ghé cửa hàng để mua một ít sức mạnh trước!
                   </p>
                   <Link href="/sabotage-store" className={styles.storeLink} onClick={onClose}>
-                    🛒 Restock at the Sabotage Storefront
+                    🛒 Bổ sung kho tại Cửa hàng Phá hoại
                   </Link>
                 </div>
               ) : (
@@ -209,7 +209,7 @@ export default function SabotageSelectionModal({
                         >
                           <div className={styles.cardHeader}>
                             <span className={styles.cardName}>{type.name}</span>
-                            <span className={styles.cardCount}>Owned: {count}</span>
+                            <span className={styles.cardCount}>Sở hữu: {count}</span>
                           </div>
                           <p className={styles.cardDescription}>{type.description}</p>
                           <span className={styles.cardEffect}>{type.effect}</span>
@@ -225,7 +225,7 @@ export default function SabotageSelectionModal({
                       onClick={onClose}
                       disabled={isDeploying}
                     >
-                      Cancel
+                      Hủy
                     </button>
                     <button
                       type="button"
@@ -233,7 +233,7 @@ export default function SabotageSelectionModal({
                       onClick={handleDeploy}
                       disabled={!selectedEffect || isDeploying}
                     >
-                      {isDeploying ? 'Deploying...' : 'Deploy'}
+                      {isDeploying ? 'Đang kích hoạt...' : 'Kích hoạt'}
                     </button>
                   </div>
                 </>

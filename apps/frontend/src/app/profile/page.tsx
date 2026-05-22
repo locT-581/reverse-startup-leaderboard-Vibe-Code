@@ -10,11 +10,11 @@ import { useMercyStore } from '../../core/store/useMercyStore';
 import MercyActivationModal from '../../domains/anti-ux/components/MercyActivationModal';
 
 const AVATARS = [
-  { id: 'avatar_clown', emoji: '🤡', label: 'Clown' },
-  { id: 'avatar_turtle', emoji: '🐢', label: 'Turtle' },
-  { id: 'avatar_trash', emoji: '🗑️', label: 'Trash Can' },
-  { id: 'avatar_bug', emoji: '🐛', label: 'Bug' },
-  { id: 'avatar_ghost', emoji: '👻', label: 'Ghost' },
+  { id: 'avatar_clown', emoji: '🤡', label: 'Chú hề' },
+  { id: 'avatar_turtle', emoji: '🐢', label: 'Rùa' },
+  { id: 'avatar_trash', emoji: '🗑️', label: 'Thùng rác' },
+  { id: 'avatar_bug', emoji: '🐛', label: 'Bọ' },
+  { id: 'avatar_ghost', emoji: '👻', label: 'Ma' },
 ];
 
 const AVATAR_MAP: Record<string, string> = {
@@ -76,7 +76,7 @@ export default function ProfilePage() {
     setSuccess(null);
 
     if (!username.trim()) {
-      setError('Username cannot be empty. Stand proud.');
+      setError('Tên người dùng không được để trống. Hãy kiêu hãnh lên.');
       return;
     }
 
@@ -84,9 +84,9 @@ export default function ProfilePage() {
       const response = await actionUpdateProfile(username, avatar);
       if (response.success && response.data) {
         setUser(response.data);
-        setSuccess('Profile updated successfully! Leaderboard is reflecting your changes.');
+        setSuccess('Cập nhật hồ sơ thành công! Bảng xếp hạng đang ghi nhận các thay đổi của bạn.');
       } else {
-        setError(response.error?.message || 'Profile update failed.');
+        setError(response.error?.message || 'Cập nhật hồ sơ thất bại.');
       }
     });
   };
@@ -112,7 +112,7 @@ export default function ProfilePage() {
       logoutStore();
       router.push('/auth');
     } else {
-      setError('Logout failed. You are stuck here.');
+      setError('Đăng xuất thất bại. Bạn bị kẹt ở đây rồi.');
     }
   };
 
@@ -120,7 +120,7 @@ export default function ProfilePage() {
     return (
       <div className={styles.container}>
         <div className={styles.card} style={{ textAlign: 'center' }}>
-          <h2 className={styles.title}>Loading session...</h2>
+          <h2 className={styles.title}>Đang tải phiên...</h2>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export default function ProfilePage() {
             role="img"
             aria-label={
               user.logicViolations >= 5
-                ? `${AVATARS.find((av) => av.id === avatar)?.label || 'Avatar'} - penalized with a clown hat`
+                ? `${AVATARS.find((av) => av.id === avatar)?.label || 'Avatar'} - bị phạt với mũ chú hề`
                 : (AVATARS.find((av) => av.id === avatar)?.label || 'Avatar')
             }
           >
@@ -144,25 +144,25 @@ export default function ProfilePage() {
           <h1 className={styles.title}>
             {user.username}
             {user.logicViolations >= 5 && (
-              <span className={styles.srOnly}> (Penalized with a clown hat)</span>
+              <span className={styles.srOnly}> (Bị phạt với mũ chú hề)</span>
             )}
-            {mercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '6px' }}>👶</span>}
+            {mercyActive && <span title="Chế độ Trẻ chập chững đang hoạt động" style={{ marginLeft: '6px' }}>👶</span>}
           </h1>
         </div>
 
         <div className={styles.statsGrid}>
           <div className={styles.statBox}>
-            <div className={styles.statLabel}>Wasted Calories</div>
+            <div className={styles.statLabel}>Calo lãng phí</div>
             <div className={styles.statVal}>{user.wastedCalories} kcal</div>
           </div>
           <div className={styles.statBox}>
-            <div className={styles.statLabel}>Logic Violations</div>
+            <div className={styles.statLabel}>Vi phạm logic</div>
             <div className={styles.statVal}>{user.logicViolations}</div>
           </div>
         </div>
 
         <Link href="/sabotage-store" className={styles.storeButton} data-testid="profile-sabotage-store">
-          😈 Go to Sabotage Store
+          😈 Đến Cửa hàng Phá hoại
         </Link>
 
         <button
@@ -171,7 +171,7 @@ export default function ProfilePage() {
           onClick={handleShareProfile}
           data-testid="share-profile-btn"
         >
-          {shareStatus ? 'Copied! ✓' : 'Share Profile Link 🔗'}
+          {shareStatus ? 'Đã sao chép! ✓' : 'Chia sẻ liên kết hồ sơ 🔗'}
         </button>
 
         {success && <div className={styles.successMessage}>{success}</div>}
@@ -180,7 +180,7 @@ export default function ProfilePage() {
         <form className={styles.form} onSubmit={handleSave}>
           <div className={styles.fieldGroup}>
             <label className={styles.label} htmlFor="username">
-              Username
+              Tên người dùng
             </label>
             <input
               id="username"
@@ -189,12 +189,12 @@ export default function ProfilePage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={isPending}
-              placeholder="e.g. CodeWaster99"
+              placeholder="vd: CodeWaster99"
             />
           </div>
 
           <div className={styles.fieldGroup}>
-            <label className={styles.label}>Select Avatar</label>
+            <label className={styles.label}>Chọn hình đại diện</label>
             <div className={styles.avatarPicker}>
               {AVATARS.map((av) => (
                 <button
@@ -214,10 +214,10 @@ export default function ProfilePage() {
 
           {failures >= 10 && (
             <div className={styles.mercySection}>
-              <h3 className={styles.mercyTitle}>Toddler Settings</h3>
+              <h3 className={styles.mercyTitle}>Cài đặt cho Trẻ chập chững</h3>
               <div className={styles.toggleRow}>
                 <label htmlFor="mercy-mode-toggle" className={styles.toggleLabel}>
-                  👶 Mercy Mode (Toddler Mode) {isTogglingMercy && <span className={styles.loadingText}>(Syncing...)</span>}
+                  👶 Chế độ Khoan hồng (Chế độ Trẻ chập chững) {isTogglingMercy && <span className={styles.loadingText}>(Đang đồng bộ...)</span>}
                 </label>
                 <input
                   id="mercy-mode-toggle"
@@ -236,7 +236,7 @@ export default function ProfilePage() {
                 />
               </div>
               <p className={styles.toggleHint}>
-                Disables evasive UI elements and sponsored CAPTCHAs so you can navigate without crying.
+                Vô hiệu hóa các phần tử UI lẩn tránh và mã CAPTCHA được tài trợ để bạn có thể điều hướng mà không cần khóc lóc.
               </p>
             </div>
           )}
@@ -247,7 +247,7 @@ export default function ProfilePage() {
               className={styles.saveButton}
               disabled={isPending}
             >
-              {isPending ? 'Saving...' : 'Save Profile'}
+              {isPending ? 'Đang lưu...' : 'Lưu hồ sơ'}
             </button>
             <button
               type="button"
@@ -255,7 +255,7 @@ export default function ProfilePage() {
               onClick={handleLogout}
               disabled={isPending}
             >
-              Logout
+              Đăng xuất
             </button>
           </div>
         </form>

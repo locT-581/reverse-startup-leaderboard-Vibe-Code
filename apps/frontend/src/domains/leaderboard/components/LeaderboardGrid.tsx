@@ -22,12 +22,12 @@ const AVATAR_MAP: Record<string, string> = {
 };
 
 const AVATAR_LABEL_MAP: Record<string, string> = {
-  avatar_clown: 'Clown',
-  avatar_turtle: 'Turtle',
-  avatar_trash: 'Trash Can',
-  avatar_bug: 'Bug',
-  avatar_ghost: 'Ghost',
-  default_avatar: 'Avatar'
+  avatar_clown: 'Hề',
+  avatar_turtle: 'Rùa',
+  avatar_trash: 'Thùng rác',
+  avatar_bug: 'Bọ',
+  avatar_ghost: 'Ma',
+  default_avatar: 'Ảnh đại diện'
 };
 
 export default function LeaderboardGrid() {
@@ -65,7 +65,7 @@ export default function LeaderboardGrid() {
     if (currentUser?.id === authorId) {
       setReportingError((prev) => ({
         ...prev,
-        [postId]: "Why are you reporting yourself? That's too logical, stop it!",
+        [postId]: "Tại sao bạn lại tự báo cáo chính mình? Làm vậy quá logic đấy, dừng lại đi!",
       }));
       return;
     }
@@ -79,7 +79,7 @@ export default function LeaderboardGrid() {
         if (!response.success) {
           setReportingError((prev) => ({
             ...prev,
-            [postId]: response.error?.message || 'Failed to report logic.',
+            [postId]: response.error?.message || 'Báo cáo logic thất bại.',
           }));
         }
       } finally {
@@ -95,7 +95,7 @@ export default function LeaderboardGrid() {
       if (response.success && response.data) {
         setPosts(response.data);
       } else {
-        setError(response.error?.message || 'Failed to fetch leaderboard data.');
+        setError(response.error?.message || 'Tải dữ liệu bảng xếp hạng thất bại.');
       }
     });
 
@@ -123,7 +123,7 @@ export default function LeaderboardGrid() {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner} role="status"></div>
-        <p>Retrieving high-scoring wastefulness...</p>
+        <p>Đang tải danh sách kém hiệu quả điểm cao...</p>
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function LeaderboardGrid() {
   if (posts.length === 0) {
     return (
       <div className={styles.emptyContainer}>
-        <p>No wasted calories yet. Someone needs to write some terrible code, quickly!</p>
+        <p>Chưa có calo lãng phí nào. Ai đó cần phải viết code tệ ngay đi!</p>
       </div>
     );
   }
@@ -147,10 +147,10 @@ export default function LeaderboardGrid() {
   return (
     <div className={styles.gridContainer}>
       <div className={styles.headerRow}>
-        <div className={styles.colRank}>Rank</div>
-        <div className={styles.colAuthor}>Innovator</div>
-        <div className={styles.colTitle}>Idea</div>
-        <div className={styles.colScore}>Wasted Calories</div>
+        <div className={styles.colRank}>Hạng</div>
+        <div className={styles.colAuthor}>Nhà đổi mới</div>
+        <div className={styles.colTitle}>Ý tưởng</div>
+        <div className={styles.colScore}>Calo Lãng phí</div>
       </div>
       <div className={styles.postsList}>
         {posts.map((post, index) => {
@@ -185,7 +185,7 @@ export default function LeaderboardGrid() {
                 {/* Screen Reader Bypass - read clean text block if distorted */}
                 {isDistorted && (
                   <div className={styles.srOnly}>
-                    Rank {index + 1}. Innovator: {post.author.username}{post.author.logicViolations >= 5 ? ' (Penalized with a clown hat)' : ''}. Idea: {post.title} - {post.content}. Wasted calories: {post.wastedCalories} kcal.
+                    Hạng {index + 1}. Nhà đổi mới: {post.author.username}{post.author.logicViolations >= 5 ? ' (Bị phạt đội mũ hề)' : ''}. Ý tưởng: {post.title} - {post.content}. Calo lãng phí: {post.wastedCalories} kcal.
                   </div>
                 )}
 
@@ -198,8 +198,8 @@ export default function LeaderboardGrid() {
                     role="img"
                     aria-label={
                       post.author.logicViolations >= 5
-                        ? `${AVATAR_LABEL_MAP[post.author.avatar] || 'Avatar'} - penalized with a clown hat`
-                        : (AVATAR_LABEL_MAP[post.author.avatar] || 'Avatar')
+                        ? `${AVATAR_LABEL_MAP[post.author.avatar] || 'Ảnh đại diện'} - bị phạt đội mũ hề`
+                        : (AVATAR_LABEL_MAP[post.author.avatar] || 'Ảnh đại diện')
                     }
                   >
                     {AVATAR_MAP[post.author.avatar] || '👤'}
@@ -207,12 +207,12 @@ export default function LeaderboardGrid() {
                   <span className={styles.authorName}>
                     {post.author.username}
                     {post.author.logicViolations >= 5 && (
-                      <span className={styles.srOnly}> (Penalized with a clown hat)</span>
+                      <span className={styles.srOnly}> (Bị phạt đội mũ hề)</span>
                     )}
                     {post.author.isMercyActive && (
-                      <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
+                      <span className={styles.mercyBadge} title="Chế độ Trẻ chập chững đang hoạt động" style={{ marginLeft: '4px' }}>👶</span>
                     )}
-                    <span className={styles.violationsBadge} title={`Logic Violations: ${post.author.logicViolations || 0}`}>
+                    <span className={styles.violationsBadge} title={`Vi phạm logic: ${post.author.logicViolations || 0}`}>
                       🚨 {post.author.logicViolations || 0}
                     </span>
                   </span>
@@ -244,10 +244,10 @@ export default function LeaderboardGrid() {
                         <button
                           className={styles.shareBtn}
                           onClick={() => handleSharePost(post.id)}
-                          aria-label={`Share link for post: ${post.title}`}
+                          aria-label={`Chia sẻ liên kết cho bài viết: ${post.title}`}
                           data-testid="share-post-btn"
                         >
-                          {shareStatus[post.id] ? 'Copied! ✓' : 'Share 🔗'}
+                          {shareStatus[post.id] ? 'Đã sao chép! ✓' : 'Chia sẻ 🔗'}
                         </button>
                       </div>
                       <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
@@ -267,9 +267,9 @@ export default function LeaderboardGrid() {
                                 });
                                 setIsModalOpen(true);
                               }}
-                              aria-label={`Sabotage post by ${post.author.username}`}
+                              aria-label={`Phá hoại bài viết của ${post.author.username}`}
                             >
-                              Sabotage 😈
+                              Phá hoại 😈
                             </button>
                           </div>
                           <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
@@ -277,9 +277,9 @@ export default function LeaderboardGrid() {
                               className={styles.reportLogicBtn}
                               onClick={() => handleReport(post.id, post.author.id)}
                               disabled={isReporting && !!reportingStates[post.id]}
-                              aria-label={`Report logic in post by ${post.author.username}`}
+                              aria-label={`Báo cáo logic trong bài viết của ${post.author.username}`}
                             >
-                              {isReporting && reportingStates[post.id] ? 'Reporting... ⏳' : 'Report Logic 🚨'}
+                              {isReporting && reportingStates[post.id] ? 'Đang báo cáo... ⏳' : 'Báo cáo Logic 🚨'}
                             </button>
                           </div>
                         </>

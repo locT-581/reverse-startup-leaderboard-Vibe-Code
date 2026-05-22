@@ -10,7 +10,7 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
 
     // Register User A
     await pageA.goto('/auth');
-    await pageA.click('button:has-text("Register now")');
+    await pageA.click('button:has-text("Đăng ký ngay")');
     const userAUsername = `usera_${Date.now()}`;
     await pageA.fill('#username', userAUsername);
     await pageA.fill('#password', 'pass1234');
@@ -19,23 +19,23 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
 
     // Create a post as User A
     await pageA.goto('/');
-    await pageA.click('button:has-text("Propose a Paradigm")');
+    await pageA.click('button:has-text("💡 Đề xuất một Hệ hình")');
     const titleInput = pageA.locator('#post-title-input');
     const postTitle = `Leverage synergy paradigm A ${Date.now()}`;
     await titleInput.fill(postTitle);
     const contentInput = pageA.locator('#post-content-input');
     await contentInput.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-    await pageA.click('button:has-text("Propose Paradigm")');
+    await pageA.click('button:has-text("Đề xuất Mô hình")');
 
     // Solve Ad Captcha
-    await expect(pageA.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(pageA.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const postAdText = await pageA.locator('#sponsor-ad-text').textContent();
     expect(postAdText).not.toBeNull();
     await pageA.fill('#ad-verification-input', postAdText!);
-    await pageA.click('button:has-text("Verify & Submit")');
+    await pageA.click('button:has-text("Xác minh & Gửi")');
 
     // Wait for the modal to close and verify post is on the leaderboard
-    await expect(pageA.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    await expect(pageA.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible({ timeout: 5000 });
     const postRowLocator = pageA.locator('div[class*="postRowWrapper"]').filter({ hasText: postTitle });
     await expect(postRowLocator).toBeVisible();
 
@@ -51,7 +51,7 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
 
     // Register User B
     await pageB.goto('/auth');
-    await pageB.click('button:has-text("Register now")');
+    await pageB.click('button:has-text("Đăng ký ngay")');
     const userBUsername = `userb_${Date.now()}`;
     await pageB.fill('#username', userBUsername);
     await pageB.fill('#password', 'pass1234');
@@ -75,19 +75,19 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
     const postRowOnB = pageB.locator('div[class*="postRowWrapper"]').filter({ hasText: postTitle });
     await expect(postRowOnB).toBeVisible();
 
-    // Click "Sabotage 😈" trigger button
-    await postRowOnB.locator('button:has-text("Sabotage 😈")').click();
+    // Click "Phá hoại 😈" trigger button
+    await postRowOnB.locator('button:has-text("Phá hoại 😈")').click();
 
     // Verify modal is displayed and retrieve inventory count
-    await expect(pageB.locator('h2:has-text("Sabotage Paradigm")')).toBeVisible();
-    await pageB.locator('div[class*="inventoryCard"]').filter({ hasText: 'Blur Pack' }).click();
+    await expect(pageB.locator('h2:has-text("Phá hoại Mô hình 😈")')).toBeVisible();
+    await pageB.locator('div[class*="inventoryCard"]').filter({ hasText: 'Gói Làm mờ' }).click();
 
     // Deploy visual sabotage
-    await pageB.locator('button:has-text("Deploy")').click();
+    await pageB.locator('button:has-text("Kích hoạt")').click();
 
     // Verify success confirmation and wait for modal to auto-close
-    await expect(pageB.locator('text=Sabotage deployed successfully!')).toBeVisible();
-    await expect(pageB.locator('h2:has-text("Sabotage Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    await expect(pageB.locator('text=Đã kích hoạt phá hoại thành công!')).toBeVisible();
+    await expect(pageB.locator('h2:has-text("Phá hoại Mô hình 😈")')).not.toBeVisible({ timeout: 5000 });
 
     // Verify score is decremented by 100 kcal in real time on both Page A and Page B
     const expectedScoreText = `${initialScoreNumber - 100} kcal`;
@@ -131,7 +131,7 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
 
     // Register User A
     await page.goto('/auth');
-    await page.click('button:has-text("Register now")');
+    await page.click('button:has-text("Đăng ký ngay")');
     const username = `selfsab_${Date.now()}`;
     await page.fill('#username', username);
     await page.fill('#password', 'pass1234');
@@ -140,23 +140,23 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
 
     // Create a post as User A
     await page.goto('/');
-    await page.click('button:has-text("Propose a Paradigm")');
+    await page.click('button:has-text("💡 Đề xuất một Hệ hình")');
     const titleInput = page.locator('#post-title-input');
     const postTitle = `Leverage synergy self sabotage paradigm ${Date.now()}`;
     await titleInput.fill(postTitle);
     const contentInput = page.locator('#post-content-input');
     await contentInput.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
-    await page.click('button:has-text("Propose Paradigm")');
+    await page.click('button:has-text("Đề xuất Mô hình")');
 
     // Solve Ad Captcha
-    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Xác minh thông điệp tài trợ")')).toBeVisible();
     const postAdText = await page.locator('#sponsor-ad-text').textContent();
     expect(postAdText).not.toBeNull();
     await page.fill('#ad-verification-input', postAdText!);
-    await page.click('button:has-text("Verify & Submit")');
+    await page.click('button:has-text("Xác minh & Gửi")');
 
     // Wait for the modal to close
-    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h2:has-text("Đề xuất một Mô hình")')).not.toBeVisible({ timeout: 5000 });
     const postRowLocator = page.locator('div[class*="postRowWrapper"]').filter({ hasText: postTitle });
     await expect(postRowLocator).toBeVisible();
 
@@ -174,21 +174,21 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
     await page.goto('/');
     await expect(postRowLocator).toBeVisible();
 
-    // Click "Sabotage 😈" on their own post
-    await postRowLocator.locator('button:has-text("Sabotage 😈")').click();
+    // Click "Phá hoại 😈" on their own post
+    await postRowLocator.locator('button:has-text("Phá hoại 😈")').click();
 
     // Verify modal is displayed and select Comic Sans Pack
-    await expect(page.locator('h2:has-text("Sabotage Paradigm")')).toBeVisible();
-    await page.locator('div[class*="inventoryCard"]').filter({ hasText: 'Comic Sans Pack' }).click();
+    await expect(page.locator('h2:has-text("Phá hoại Mô hình 😈")')).toBeVisible();
+    await page.locator('div[class*="inventoryCard"]').filter({ hasText: 'Gói Comic Sans' }).click();
 
     // Click Deploy
-    await page.locator('button:has-text("Deploy")').click();
+    await page.locator('button:has-text("Kích hoạt")').click();
 
     // Verify self-sabotage error message is displayed
     await expect(page.locator('text=You cannot sabotage your own post!')).toBeVisible();
 
     // Close modal
-    await page.locator('button[aria-label="Close modal"]').click();
+    await page.locator('button[aria-label="Đóng cửa sổ"]').click();
 
     // Test API validation and self-sabotage directly using the page's request context
     const cookies = await page.context().cookies();

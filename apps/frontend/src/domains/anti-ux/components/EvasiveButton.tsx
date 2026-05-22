@@ -149,7 +149,7 @@ export default function EvasiveButton({
       if (btn && btn.contains(e.target as Node)) {
         return; // Clicked the button itself
       }
-      triggerComboReset('Synergy levels too low!');
+      triggerComboReset('Mức độ đồng bộ (synergy) quá thấp!');
     };
 
     document.addEventListener('click', handleGlobalClick);
@@ -359,10 +359,10 @@ export default function EvasiveButton({
           onSuccess(res.data);
         }
       } else {
-        setTooltip(res.error?.message || 'Vote failed');
+        setTooltip(res.error?.message || 'Bình chọn thất bại');
       }
     } catch (err: any) {
-      setTooltip(err.message || 'Error occurred');
+      setTooltip(err.message || 'Đã xảy ra lỗi');
     } finally {
       setIsSubmitting(false);
       isSubmittingRef.current = false;
@@ -445,7 +445,7 @@ export default function EvasiveButton({
     if (isVibrating) {
       if (comboCount === 0) {
         timerRef.current = setTimeout(() => {
-          triggerComboReset('Too slow, grandpa!');
+          triggerComboReset('Quá chậm rồi, ông bạn!');
         }, 2000);
       }
 
@@ -492,11 +492,11 @@ export default function EvasiveButton({
     .filter(Boolean)
     .join(' ');
 
-  let buttonText = '🔥 Wasted Calories';
+  let buttonText = '🔥 Calo Lãng phí';
   if (cooldownLeft > 0) {
-    buttonText = `Breathing... (${cooldownLeft}s)`;
+    buttonText = `Hồi chiêu... (${cooldownLeft}s)`;
   } else if (isVibrating) {
-    buttonText = comboCount > 0 ? `COMBO: ${comboCount}/5` : 'CLICK 5x SPEED!';
+    buttonText = comboCount > 0 ? `COMBO: ${comboCount}/5` : 'BẤM NHANH 5 LẦN!';
   }
 
   return (
@@ -513,7 +513,7 @@ export default function EvasiveButton({
           '--offset-x': `${offset.x}px`,
           '--offset-y': `${offset.y}px`
         } as React.CSSProperties}
-        aria-label={`Vote to deduct rank for this ${targetType}`}
+        aria-label={`Bình chọn để trừ hạng cho ${targetType === 'post' ? 'bài viết' : 'bình luận'} này`}
       >
         {buttonText}
       </button>
