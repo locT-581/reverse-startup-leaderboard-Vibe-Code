@@ -6,13 +6,17 @@ const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-development-on
 async function verifyJwt(token: string, secret: string): Promise<boolean> {
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return false;
+    if (parts.length !== 3) {
+      console.error('[verifyJwt] Token does not have 3 parts:', parts.length);
+      return false;
+    }
     const [headerB64, payloadB64, signatureB64] = parts;
 
     // Decode payload to check expiration
     const payloadStr = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
     const payload = JSON.parse(payloadStr);
     if (payload.exp && Date.now() >= payload.exp * 1000) {
+      console.error('[verifyJwt] Token expired:', payload.exp);
       return false;
     }
 
@@ -34,13 +38,19 @@ async function verifyJwt(token: string, secret: string): Promise<boolean> {
       c => c.charCodeAt(0)
     );
 
-    return await crypto.subtle.verify(
+    const isVerified = await crypto.subtle.verify(
       'HMAC',
       key,
       sigBinary,
       data
     );
-  } catch {
+
+    if (!isVerified) {
+      console.error('[verifyJwt] Signature verification failed. Secret length:', secret.length);
+    }
+    return isVerified;
+  } catch (err) {
+    console.error('[verifyJwt] Caught exception during verification:', err);
     return false;
   }
 }

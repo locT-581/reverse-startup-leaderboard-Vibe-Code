@@ -42,6 +42,7 @@ export async function actionRegister(
 
     const data = await res.json();
     if (!res.ok) {
+      console.error('[actionRegister] Server returned error:', res.status, data);
       return {
         success: false,
         error: { message: data.error?.message || 'Registration failed. The universe is against you.' },
@@ -58,6 +59,7 @@ export async function actionRegister(
 
     return { success: true, data: data.data };
   } catch (err) {
+    console.error('[actionRegister] Caught exception:', err);
     return {
       success: false,
       error: { message: 'Failed to contact backend. Maybe it does not like you.' },
@@ -85,6 +87,7 @@ export async function actionLogin(
 
     const data = await res.json();
     if (!res.ok) {
+      console.error('[actionLogin] Server returned error:', res.status, data);
       return {
         success: false,
         error: { message: data.error?.message || 'Invalid credentials. Password memory failure?' },
@@ -101,6 +104,7 @@ export async function actionLogin(
 
     return { success: true, data: data.data };
   } catch (err) {
+    console.error('[actionLogin] Caught exception:', err);
     return {
       success: false,
       error: { message: 'Failed to contact backend. Try checking if it is even running.' },
@@ -135,6 +139,9 @@ export async function actionUpdateProfile(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
         error: { message: data.error?.message || 'Profile update failed. Try to make a valid request.' },
@@ -176,8 +183,13 @@ export async function actionGetMe(): Promise<ActionResponse<UserProfile>> {
       },
     });
 
-    const data = await res.json();
+    let data: any = {};
+    try {
+      data = await res.json();
+    } catch (_) {}
+
     if (!res.ok) {
+      cookieStore.delete('token');
       return {
         success: false,
         error: { message: data.error?.message || 'Session verification failed.' },
@@ -186,6 +198,9 @@ export async function actionGetMe(): Promise<ActionResponse<UserProfile>> {
 
     return { success: true, data: data.data };
   } catch (err) {
+    try {
+      cookieStore.delete('token');
+    } catch (_) {}
     return {
       success: false,
       error: { message: 'Could not reach session server.' },
@@ -220,6 +235,9 @@ export async function actionSyncMercyState(
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) {
+        cookieStore.delete('token');
+      }
       return {
         success: false,
         error: { message: data.error?.message || 'Failed to sync mercy state.' },
