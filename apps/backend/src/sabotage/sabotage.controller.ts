@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Req, UseGuards, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Req, UseGuards, Headers, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { SabotageService } from './sabotage.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('sabotage')
 export class SabotageController {
-  constructor(private readonly sabotageService: SabotageService) {}
+  constructor(private readonly sabotageService: SabotageService) { }
 
   @UseGuards(JwtAuthGuard)
   @Get('packs')
@@ -50,10 +50,24 @@ export class SabotageController {
   @Post('deploy')
   async deploySabotage(
     @Req() req: any,
-    @Body('postId') postId: string,
-    @Body('effectType') effectType: string,
+    @Body() body: { postId?: string; effectType?: string },
   ) {
+    if (!body || !body.postId || !body.effectType) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: 'postId and effectType are required.' },
+      });
+    }
+
+    const validEffects = ['blur', 'comic_sans', 'papyrus', 'deduct_calories'];
+    if (!validEffects.includes(body.effectType)) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: `Invalid effectType. Must be one of: ${validEffects.join(', ')}` },
+      });
+    }
+
     const userId = req.user.sub;
-    return this.sabotageService.deploySabotage(userId, postId, effectType);
+    return this.sabotageService.deploySabotage(userId, body.postId, body.effectType);
   }
 }

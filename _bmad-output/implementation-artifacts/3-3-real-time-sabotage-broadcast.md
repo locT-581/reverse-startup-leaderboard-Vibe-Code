@@ -115,6 +115,16 @@ so that the target's screen instantly distorts and their score drops.
     - [x] Authenticate as User A and verify that User A's screen body has `.sabotage-blur` class applied.
     - [x] Fast-forward or wait 15 seconds and verify the class is removed.moved.
 
+### Review Findings
+
+- [x] [Review][Patch] Prevent Self-Sabotage [apps/backend/src/sabotage/sabotage.service.ts:150] — Implement a check to prevent users from deploying sabotage packs against their own posts.
+- [x] [Review][Patch] Double-Spend Concurrency Bug in Inventory Count [apps/backend/src/sabotage/sabotage.service.ts:114-134] — User inventory count is queried outside the database transaction, leading to double-spend race conditions where concurrent requests deploy multiple sabotages using a single owned item.
+- [x] [Review][Patch] Lost Update Concurrency Bug in Post Score [apps/backend/src/sabotage/sabotage.service.ts:136-198] — Wasted calories are calculated and updated based on pre-fetched state outside the database transaction, leading to lost updates when multiple clients target the same post concurrently.
+- [x] [Review][Patch] Missing Validation on Deploy Endpoint [apps/backend/src/sabotage/sabotage.controller.ts:55-62] — Missing input validation and DTO structure for the deploy endpoint body parameters, allowing invalid or malformed data.
+- [x] [Review][Patch] Inconsistent Transaction Timestamps [apps/backend/src/sabotage/sabotage.service.ts:172-181] — Transaction updates use independent new Date() calls instead of a single, consistent timestamp reference.
+- [x] [Review][Defer] NestJS Circular Dependency between Leaderboard and Sabotage [apps/backend/src/sabotage/sabotage.module.ts:80] — resolved via forwardRef, pre-existing
+- [x] [Review][Defer] No Backend Persistence of Active Sabotage Effects [apps/backend/src/sabotage/sabotage.service.ts:190] — Visual distortion active state is not persisted on the backend database, meaning effects do not survive page reloads. This meets acceptance criteria but could be improved, pre-existing
+
 ## Dev Notes
 
 ### Socket.io Event Handling

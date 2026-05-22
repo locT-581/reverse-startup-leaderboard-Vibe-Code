@@ -23,3 +23,8 @@
 ## Deferred from: code review of 2-4-anti-ux-tracker-mercy-threshold.md (2026-05-21)
 
 - Client-side Cookie Manipulation during Register/Login [apps/frontend/src/app/actions/auth.ts:51] — Server Action sets cookies correctly, but client router cache needs a hard refresh or sync for instant auth visibility. Deferred as authentication functionality works as intended.
+
+## Deferred from: code review of 3-3-real-time-sabotage-broadcast.md (2026-05-22)
+
+- NestJS Circular Dependency between Leaderboard and Sabotage [apps/backend/src/sabotage/sabotage.module.ts:80] — resolved via forwardRef, pre-existing
+- No Backend Persistence of Active Sabotage Effects [apps/backend/src/sabotage/sabotage.service.ts:190] — Visual distortion active state is not persisted on the backend database, meaning effects do not survive page reloads. This meets acceptance criteria but could be improved, pre-existing

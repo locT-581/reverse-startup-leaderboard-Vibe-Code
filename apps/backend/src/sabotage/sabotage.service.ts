@@ -15,7 +15,7 @@ export class SabotageService {
     private readonly stripeService: StripeService,
     @Inject(forwardRef(() => LeaderboardGateway))
     private readonly leaderboardGateway: LeaderboardGateway,
-  ) {}
+  ) { }
 
   async getAvailablePacks() {
     const packs = await this.db
@@ -189,88 +189,103 @@ export class SabotageService {
   }
 
   async deploySabotage(userId: string, postId: string, effectType: string) {
-    // 1. Retrieve the user's inventory count for effectType
-    const userInventory = await this.db
-      .select()
-      .from(schema.userSabotages)
-      .where(
-        and(
-          eq(schema.userSabotages.userId, userId),
-          eq(schema.userSabotages.effectType, effectType),
-        ),
-      )
-      .limit(1);
+    const result = await this.db.transaction(async (tx) => {
+      // 1. Retrieve the user's inventory count for effectType with row lock
+      const userInventory = await tx
+        .select()
+        .from(schema.userSabotages)
+        .where(
+          and(
+            eq(schema.userSabotages.userId, userId),
+            eq(schema.userSabotages.effectType, effectType),
+          ),
+        )
+        .for('update')
+        .limit(1);
 
-    if (userInventory.length === 0 || userInventory[0].count <= 0) {
-      throw new BadRequestException({
-        success: false,
-        error: { message: 'Nice try, but your arsenal is empty. Visit the store to buy some power first!' },
-      });
-    }
+      if (userInventory.length === 0 || userInventory[0].count <= 0) {
+        throw new BadRequestException({
+          success: false,
+          error: { message: 'Nice try, but your arsenal is empty. Visit the store to buy some power first!' },
+        });
+      }
 
-    const inventoryRecord = userInventory[0];
+      const inventoryRecord = userInventory[0];
 
-    // 2. Retrieve the target post
-    const postRes = await this.db
-      .select()
-      .from(schema.posts)
-      .where(eq(schema.posts.id, postId))
-      .limit(1);
+      // 2. Retrieve the target post with row lock
+      const postRes = await tx
+        .select()
+        .from(schema.posts)
+        .where(eq(schema.posts.id, postId))
+        .for('update')
+        .limit(1);
 
-    if (postRes.length === 0) {
-      throw new NotFoundException({
-        success: false,
-        error: { message: 'Post not found.' },
-      });
-    }
+      if (postRes.length === 0) {
+        throw new NotFoundException({
+          success: false,
+          error: { message: 'Post not found.' },
+        });
+      }
 
-    const post = postRes[0];
+      const post = postRes[0];
 
-    // 3. Calculate score deduction
-    let deduction = 0;
-    if (effectType === 'blur') {
-      deduction = 100;
-    } else if (effectType === 'comic_sans') {
-      deduction = 150;
-    } else if (effectType === 'papyrus') {
-      deduction = 150;
-    } else if (effectType === 'deduct_calories') {
-      deduction = 500;
-    }
+      // 2b. Prevent self-sabotage
+      if (post.authorId === userId) {
+        throw new BadRequestException({
+          success: false,
+          error: { message: 'You cannot sabotage your own post!' },
+        });
+      }
 
-    const newWastedCalories = Math.max(0, post.wastedCalories - deduction);
+      // 3. Calculate score deduction
+      let deduction = 0;
+      if (effectType === 'blur') {
+        deduction = 100;
+      } else if (effectType === 'comic_sans') {
+        deduction = 150;
+      } else if (effectType === 'papyrus') {
+        deduction = 150;
+      } else if (effectType === 'deduct_calories') {
+        deduction = 500;
+      }
 
-    // 4. Update the database in a transaction
-    await this.db.transaction(async (tx) => {
-      // Decrement count
+      const newWastedCalories = Math.max(0, post.wastedCalories - deduction);
+      const now = new Date();
+
+      // 4. Update the user inventory count
       await tx
         .update(schema.userSabotages)
         .set({
           count: inventoryRecord.count - 1,
-          updatedAt: new Date(),
+          updatedAt: now,
         })
         .where(eq(schema.userSabotages.id, inventoryRecord.id));
 
-      // Update post's wasted calories
+      // 5. Update the post's wasted calories
       await tx
         .update(schema.posts)
         .set({
           wastedCalories: newWastedCalories,
-          updatedAt: new Date(),
+          updatedAt: now,
         })
         .where(eq(schema.posts.id, post.id));
+
+      return {
+        post,
+        newWastedCalories,
+      };
     });
 
-    // 5. Broadcast updated leaderboard
+    // 6. Broadcast updated leaderboard
     await this.leaderboardGateway.broadcastLeaderboard();
 
-    // 6. Broadcast custom event sabotage.deployed
-    this.leaderboardGateway.emitSabotage(post.id, effectType, post.authorId);
+    // 7. Broadcast custom event sabotage.deployed
+    this.leaderboardGateway.emitSabotage(result.post.id, effectType, result.post.authorId);
 
     return {
       success: true,
       data: {
-        newWastedCalories,
+        newWastedCalories: result.newWastedCalories,
       },
     };
   }

@@ -122,4 +122,99 @@ test.describe('Real-Time Sabotage Broadcast E2E Flow', () => {
     await contextA.close();
     await contextB.close();
   });
+
+  test('should prevent self-sabotage and validate deploy payload', async ({ browser }) => {
+    test.setTimeout(60000);
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await context.clearCookies();
+
+    // Register User A
+    await page.goto('/auth');
+    await page.click('button:has-text("Register now")');
+    const username = `selfsab_${Date.now()}`;
+    await page.fill('#username', username);
+    await page.fill('#password', 'pass1234');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(/\/profile/);
+
+    // Create a post as User A
+    await page.goto('/');
+    await page.click('button:has-text("Propose a Paradigm")');
+    const titleInput = page.locator('#post-title-input');
+    const postTitle = `Leverage synergy self sabotage paradigm ${Date.now()}`;
+    await titleInput.fill(postTitle);
+    const contentInput = page.locator('#post-content-input');
+    await contentInput.fill('This is a long content to pass validation rules. It has synergy, leverage, paradigm, scale and KPI to reach fifty characters.');
+    await page.click('button:has-text("Propose Paradigm")');
+
+    // Solve Ad Captcha
+    await expect(page.locator('h2:has-text("Sponsor Message Verification")')).toBeVisible();
+    const postAdText = await page.locator('#sponsor-ad-text').textContent();
+    expect(postAdText).not.toBeNull();
+    await page.fill('#ad-verification-input', postAdText!);
+    await page.click('button:has-text("Verify & Submit")');
+
+    // Wait for the modal to close
+    await expect(page.locator('h2:has-text("Propose a Paradigm")')).not.toBeVisible({ timeout: 5000 });
+    const postRowLocator = page.locator('div[class*="postRowWrapper"]').filter({ hasText: postTitle });
+    await expect(postRowLocator).toBeVisible();
+
+    // Go to Sabotage Store and purchase a Comic Sans Pack
+    await page.goto('/sabotage-store');
+    await expect(page.locator('[data-testid="inv-comic_sans"]')).toContainText('0');
+    await page.locator('[data-testid="buy-button-comic_sans"]').click();
+    await expect(page.locator('[data-testid="checkout-success-banner"]')).toBeVisible();
+    await expect(page.locator('[data-testid="inv-comic_sans"]')).toContainText('1');
+
+    // Close checkout success banner
+    await page.locator('[data-testid="checkout-success-banner"] button').click();
+
+    // Go back to Leaderboard
+    await page.goto('/');
+    await expect(postRowLocator).toBeVisible();
+
+    // Click "Sabotage 😈" on their own post
+    await postRowLocator.locator('button:has-text("Sabotage 😈")').click();
+
+    // Verify modal is displayed and select Comic Sans Pack
+    await expect(page.locator('h2:has-text("Sabotage Paradigm")')).toBeVisible();
+    await page.locator('div[class*="inventoryCard"]').filter({ hasText: 'Comic Sans Pack' }).click();
+
+    // Click Deploy
+    await page.locator('button:has-text("Deploy")').click();
+
+    // Verify self-sabotage error message is displayed
+    await expect(page.locator('text=You cannot sabotage your own post!')).toBeVisible();
+
+    // Close modal
+    await page.locator('button[aria-label="Close modal"]').click();
+
+    // Test API validation and self-sabotage directly using the page's request context
+    const cookies = await page.context().cookies();
+    const tokenCookie = cookies.find(c => c.name === 'token');
+    const token = tokenCookie?.value;
+    expect(token).not.toBeNull();
+
+    // 1. Missing parameters
+    const resMissing = await page.request.post('http://localhost:3001/sabotage/deploy', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {},
+    });
+    expect(resMissing.status()).toBe(400);
+    const jsonMissing = await resMissing.json();
+    expect(jsonMissing.error?.message || jsonMissing.message).toContain('postId and effectType are required.');
+
+    // 2. Invalid effectType
+    const resInvalidEffect = await page.request.post('http://localhost:3001/sabotage/deploy', {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { postId: 'some-uuid', effectType: 'invalid-effect-type' },
+    });
+    expect(resInvalidEffect.status()).toBe(400);
+    const jsonInvalidEffect = await resInvalidEffect.json();
+    expect(jsonInvalidEffect.error?.message || jsonInvalidEffect.message).toContain('Invalid effectType.');
+
+    // Close context
+    await context.close();
+  });
 });
