@@ -231,6 +231,52 @@ export default function LeaderboardGrid() {
                       ⚠️ {reportingError[post.id]}
                     </span>
                   )}
+                  <div className={styles.actionButtons}>
+                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <button
+                        className={styles.shareBtn}
+                        onClick={() => handleSharePost(post.id)}
+                        aria-label={`Chia sẻ liên kết cho bài viết: ${post.title}`}
+                        data-testid="share-post-btn"
+                      >
+                        {shareStatus[post.id] ? 'Đã sao chép! ✓' : 'Chia sẻ 🔗'}
+                      </button>
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      <EvasiveButton targetId={post.id} targetType="post" />
+                    </div>
+
+                    {currentUser && (
+                      <>
+                        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <button
+                            className={styles.sabotageBtn}
+                            onClick={() => {
+                              setSelectedSabotagePost({
+                                id: post.id,
+                                title: post.title,
+                                authorId: post.author.id,
+                              });
+                              setIsModalOpen(true);
+                            }}
+                            aria-label={`Phá hoại bài viết của ${post.author.username}`}
+                          >
+                            Phá hoại 😈
+                          </button>
+                        </div>
+                        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                          <button
+                            className={styles.reportLogicBtn}
+                            onClick={() => handleReport(post.id, post.author.id)}
+                            disabled={isReporting && !!reportingStates[post.id]}
+                            aria-label={`Báo cáo logic trong bài viết của ${post.author.username}`}
+                          >
+                            {isReporting && reportingStates[post.id] ? 'Đang báo cáo... ⏳' : 'Báo cáo Logic 🚨'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.colScore}>
                   <div className={styles.scoreContainer}>
@@ -242,52 +288,6 @@ export default function LeaderboardGrid() {
                         <GoldenRaspberryBadge />
                       </div>
                     )}
-                    <div className={styles.actionButtons}>
-                      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                        <button
-                          className={styles.shareBtn}
-                          onClick={() => handleSharePost(post.id)}
-                          aria-label={`Chia sẻ liên kết cho bài viết: ${post.title}`}
-                          data-testid="share-post-btn"
-                        >
-                          {shareStatus[post.id] ? 'Đã sao chép! ✓' : 'Chia sẻ 🔗'}
-                        </button>
-                      </div>
-                      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                        <EvasiveButton targetId={post.id} targetType="post" />
-                      </div>
-
-                      {currentUser && (
-                        <>
-                          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                            <button
-                              className={styles.sabotageBtn}
-                              onClick={() => {
-                                setSelectedSabotagePost({
-                                  id: post.id,
-                                  title: post.title,
-                                  authorId: post.author.id,
-                                });
-                                setIsModalOpen(true);
-                              }}
-                              aria-label={`Phá hoại bài viết của ${post.author.username}`}
-                            >
-                              Phá hoại 😈
-                            </button>
-                          </div>
-                          <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                            <button
-                              className={styles.reportLogicBtn}
-                              onClick={() => handleReport(post.id, post.author.id)}
-                              disabled={isReporting && !!reportingStates[post.id]}
-                              aria-label={`Báo cáo logic trong bài viết của ${post.author.username}`}
-                            >
-                              {isReporting && reportingStates[post.id] ? 'Đang báo cáo... ⏳' : 'Báo cáo Logic 🚨'}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
                   </div>
                 </div>
               </div>

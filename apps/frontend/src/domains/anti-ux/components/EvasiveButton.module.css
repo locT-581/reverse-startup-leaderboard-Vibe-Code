@@ -8,19 +8,24 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 0.5rem 1rem;
   font-family: var(--font-heading);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
   background: linear-gradient(135deg, #f43f5e, #fb7185);
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
-  transition: transform 0.1s ease, box-shadow 0.2s ease, opacity 0.3s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.2s ease,
+    opacity 0.3s ease;
   transform: translate(var(--offset-x, 0px), var(--offset-y, 0px));
   user-select: none;
+  text-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .button:hover {
@@ -44,19 +49,31 @@
   }
 
   25% {
-    transform: translate(calc(var(--offset-x, 0px) - 2px), calc(var(--offset-y, 0px) + 2px));
+    transform: translate(
+      calc(var(--offset-x, 0px) - 2px),
+      calc(var(--offset-y, 0px) + 2px)
+    );
   }
 
   50% {
-    transform: translate(calc(var(--offset-x, 0px) + 2px), calc(var(--offset-y, 0px) - 2px));
+    transform: translate(
+      calc(var(--offset-x, 0px) + 2px),
+      calc(var(--offset-y, 0px) - 2px)
+    );
   }
 
   75% {
-    transform: translate(calc(var(--offset-x, 0px) - 2px), calc(var(--offset-y, 0px) - 2px));
+    transform: translate(
+      calc(var(--offset-x, 0px) - 2px),
+      calc(var(--offset-y, 0px) - 2px)
+    );
   }
 
   100% {
-    transform: translate(calc(var(--offset-x, 0px) + 2px), calc(var(--offset-y, 0px) + 2px));
+    transform: translate(
+      calc(var(--offset-x, 0px) + 2px),
+      calc(var(--offset-y, 0px) + 2px)
+    );
   }
 }
 
