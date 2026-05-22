@@ -1,4 +1,76 @@
-node_modules
-dist
+# Dependency directories
+node_modules/
+/node_modules/
+**/node_modules/
 
-.next
+# Build and compilation outputs
+dist/
+/dist/
+**/dist/
+build/
+**/build/
+out/
+.next/
+**/.next/
+*.tsbuildinfo
+next-env.d.ts
+
+# Package manager files
+.pnpm-store/
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+npm-debug.log*
+
+# Environment files and secrets (e.g., database credentials, private keys)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.production
+.production.env
+.env*.local
+*.env
+
+# Exceptions for environment examples if they exist
+!.env.example
+
+# Test results and coverage
+coverage/
+test-results/
+playwright-report/
+blob-report/
+junit.xml
+.nyc_output/
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.project
+.classpath
+.settings/
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+*.db-journal
+
+# Temporary / Cache folders
+.cache/
+.parcel-cache/
+.eslintcache

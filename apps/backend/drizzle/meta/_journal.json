@@ -22,6 +22,13 @@
       "when": 1779358042534,
       "tag": "0002_typical_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779441773278,
+      "tag": "0003_green_loki",
+      "breakpoints": true
     }
   ]
 }
