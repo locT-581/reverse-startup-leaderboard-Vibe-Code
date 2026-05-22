@@ -28,3 +28,8 @@
 
 - NestJS Circular Dependency between Leaderboard and Sabotage [apps/backend/src/sabotage/sabotage.module.ts:80] — resolved via forwardRef, pre-existing
 - No Backend Persistence of Active Sabotage Effects [apps/backend/src/sabotage/sabotage.service.ts:190] — Visual distortion active state is not persisted on the backend database, meaning effects do not survive page reloads. This meets acceptance criteria but could be improved, pre-existing
+
+## Deferred from: code review of 4-2-visual-penalties-the-clown-hat.md (2026-05-22)
+
+- Duplicate CSS Keyframe Animations [profile.module.css:81, CommentSection.module.css:76, LeaderboardGrid.module.css:168] — `@keyframes wiggle` is duplicated verbatim in profile.module.css, CommentSection.module.css, and LeaderboardGrid.module.css, pre-existing
+- Inconsistent CSS Positioning Units for Clown Hat Overlay [LeaderboardGrid.module.css:154, CommentSection.module.css:48] — The clown hat positioning offsets use pixel values (top, right), but the size (font-size) is defined in rem. This could lead to misalignment when browser text zoom scales, pre-existing

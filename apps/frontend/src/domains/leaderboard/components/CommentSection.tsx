@@ -20,6 +20,15 @@ const AVATAR_MAP: Record<string, string> = {
   default_avatar: '👤'
 };
 
+const AVATAR_LABEL_MAP: Record<string, string> = {
+  avatar_clown: 'Clown',
+  avatar_turtle: 'Turtle',
+  avatar_trash: 'Trash Can',
+  avatar_bug: 'Bug',
+  avatar_ghost: 'Ghost',
+  default_avatar: 'Avatar'
+};
+
 interface CommentSectionProps {
   post: LeaderboardPost;
   currentUser: UserProfile | null;
@@ -76,13 +85,24 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
         ) : (
           comments.map((comment) => (
             <div key={comment.id} className={styles.commentRow}>
-              <span className={styles.commentAvatar} role="img" aria-label={comment.author.avatar}>
+              <span
+                className={`${styles.commentAvatar} ${comment.author.logicViolations >= 5 ? styles.penalizedAvatar : ''}`}
+                role="img"
+                aria-label={
+                  comment.author.logicViolations >= 5
+                    ? `${AVATAR_LABEL_MAP[comment.author.avatar] || 'Avatar'} - penalized with a clown hat`
+                    : (AVATAR_LABEL_MAP[comment.author.avatar] || 'Avatar')
+                }
+              >
                 {AVATAR_MAP[comment.author.avatar] || '👤'}
               </span>
               <div className={styles.commentBody}>
                 <div className={styles.commentMeta}>
                   <span className={styles.commentAuthor}>
                     {comment.author.username}
+                    {comment.author.logicViolations >= 5 && (
+                      <span className={styles.srOnly}> (Penalized with a clown hat)</span>
+                    )}
                     {comment.author.isMercyActive && (
                       <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
                     )}

@@ -21,6 +21,15 @@ const AVATAR_MAP: Record<string, string> = {
   default_avatar: '👤'
 };
 
+const AVATAR_LABEL_MAP: Record<string, string> = {
+  avatar_clown: 'Clown',
+  avatar_turtle: 'Turtle',
+  avatar_trash: 'Trash Can',
+  avatar_bug: 'Bug',
+  avatar_ghost: 'Ghost',
+  default_avatar: 'Avatar'
+};
+
 export default function LeaderboardGrid() {
   const [posts, setPosts] = useState<LeaderboardPost[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -162,7 +171,7 @@ export default function LeaderboardGrid() {
                 {/* Screen Reader Bypass - read clean text block if distorted */}
                 {isDistorted && (
                   <div className={styles.srOnly}>
-                    Rank {index + 1}. Innovator: {post.author.username}. Idea: {post.title} - {post.content}. Wasted calories: {post.wastedCalories} kcal.
+                    Rank {index + 1}. Innovator: {post.author.username}{post.author.logicViolations >= 5 ? ' (Penalized with a clown hat)' : ''}. Idea: {post.title} - {post.content}. Wasted calories: {post.wastedCalories} kcal.
                   </div>
                 )}
 
@@ -170,11 +179,22 @@ export default function LeaderboardGrid() {
                   <span className={styles.rankBadge}>{index + 1}</span>
                 </div>
                 <div className={styles.colAuthor} aria-hidden={isDistorted ? "true" : undefined}>
-                  <span className={styles.authorAvatar} role="img" aria-label={post.author.avatar}>
+                  <span
+                    className={`${styles.authorAvatar} ${post.author.logicViolations >= 5 ? styles.penalizedAvatar : ''}`}
+                    role="img"
+                    aria-label={
+                      post.author.logicViolations >= 5
+                        ? `${AVATAR_LABEL_MAP[post.author.avatar] || 'Avatar'} - penalized with a clown hat`
+                        : (AVATAR_LABEL_MAP[post.author.avatar] || 'Avatar')
+                    }
+                  >
                     {AVATAR_MAP[post.author.avatar] || '👤'}
                   </span>
                   <span className={styles.authorName}>
                     {post.author.username}
+                    {post.author.logicViolations >= 5 && (
+                      <span className={styles.srOnly}> (Penalized with a clown hat)</span>
+                    )}
                     {post.author.isMercyActive && (
                       <span className={styles.mercyBadge} title="Toddler Mode Active" style={{ marginLeft: '4px' }}>👶</span>
                     )}

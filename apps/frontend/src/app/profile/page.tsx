@@ -116,11 +116,23 @@ export default function ProfilePage() {
     <div className={styles.container}>
       <div className={styles.card}>
         <div className={styles.header}>
-          <div className={styles.avatarDisplay}>
+          <div
+            className={`${styles.avatarDisplay} ${user.logicViolations >= 5 ? styles.penalizedAvatar : ''}`}
+            role="img"
+            aria-label={
+              user.logicViolations >= 5
+                ? `${AVATARS.find((av) => av.id === avatar)?.label || 'Avatar'} - penalized with a clown hat`
+                : (AVATARS.find((av) => av.id === avatar)?.label || 'Avatar')
+            }
+          >
             {AVATAR_MAP[avatar] || '👤'}
           </div>
           <h1 className={styles.title}>
-            {user.username} {mercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '6px' }}>👶</span>}
+            {user.username}
+            {user.logicViolations >= 5 && (
+              <span className={styles.srOnly}> (Penalized with a clown hat)</span>
+            )}
+            {mercyActive && <span title="Toddler Mode Active" style={{ marginLeft: '6px' }}>👶</span>}
           </h1>
         </div>
 

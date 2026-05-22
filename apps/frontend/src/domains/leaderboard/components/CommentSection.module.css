@@ -42,6 +42,49 @@
   border: 1px solid #e2e8f0;
   border-radius: 50%;
   flex-shrink: 0;
+  position: relative;
+}
+
+.penalizedAvatar::after {
+  content: "🎩";
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  font-size: 1.1rem;
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .penalizedAvatar::after {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .penalizedAvatar:hover::after {
+    animation: wiggle 0.5s ease-in-out infinite;
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .commentBody {

@@ -51,10 +51,53 @@
   margin-bottom: 1rem;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
 }
 
 .avatarDisplay:hover {
   transform: scale(1.05) rotate(5deg);
+}
+
+.penalizedAvatar::after {
+  content: "🎩";
+  position: absolute;
+  top: -36px;
+  right: -24px;
+  font-size: 3.5rem;
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .penalizedAvatar::after {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .penalizedAvatar:hover::after {
+    animation: wiggle 0.5s ease-in-out infinite;
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .title {

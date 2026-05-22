@@ -52,7 +52,9 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 20px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.05),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   font-family: var(--font-body);
 }
@@ -148,6 +150,37 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 50%;
+  position: relative;
+}
+
+.penalizedAvatar::after {
+  content: "🎩";
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  font-size: 1.25rem;
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .penalizedAvatar::after {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .penalizedAvatar:hover::after {
+    animation: wiggle 0.5s ease-in-out infinite;
+  }
+}
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
 }
 
 .authorName {
