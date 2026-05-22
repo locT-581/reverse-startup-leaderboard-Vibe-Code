@@ -33,6 +33,8 @@ export default defineConfig({
       reuseExistingServer: true,
       env: {
         JWT_SECRET: 'this-is-a-very-secret-key-12345',
+        NEXT_PUBLIC_BACKEND_URL: 'http://localhost:3001',
+        BACKEND_URL: 'http://localhost:3001',
       }
     }
   ]

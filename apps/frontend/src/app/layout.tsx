@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter, Outfit } from 'next/font/google';
+import { Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google';
 import ChaosListener from '@/domains/sabotage/components/ChaosListener';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin', 'vietnamese'], variable: '--font-plus-jakarta-sans' });
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin', 'vietnamese'], variable: '--font-space-grotesk' });
 
 export const metadata: Metadata = {
   title: 'Bảng xếp hạng Khởi nghiệp Ngược',
@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi">
-      <body className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="vi" className={`${plusJakartaSans.variable} ${spaceGrotesk.variable}`}>
+      <body>
         <ChaosListener />
         {children}
       </body>

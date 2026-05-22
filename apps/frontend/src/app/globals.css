@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Space+Grotesk:wght@300..700&display=swap");
+
 :root {
   /* Core Colors */
   --color-primary: #3b82f6;
@@ -5,8 +7,8 @@
   --color-text: #111827;
 
   /* Typography */
-  --font-body: var(--font-inter), sans-serif;
-  --font-heading: var(--font-outfit), sans-serif;
+  --font-body: var(--font-plus-jakarta-sans, "Plus Jakarta Sans"), sans-serif;
+  --font-heading: var(--font-space-grotesk, "Space Grotesk"), sans-serif;
 }
 
 * {
@@ -28,6 +30,13 @@ h4,
 h5,
 h6 {
   font-family: var(--font-heading);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 @keyframes global-screen-shake {
@@ -87,10 +96,10 @@ body.sabotage-blur {
   filter: blur(2px);
 }
 body.sabotage-comic-sans * {
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+  font-family: "Comic Sans MS", "Comic Sans", cursive !important;
 }
 body.sabotage-papyrus * {
-  font-family: 'Papyrus', fantasy !important;
+  font-family: "Papyrus", fantasy !important;
 }
 
 /* Sabotage Row-level Distortions */
@@ -98,8 +107,8 @@ body.sabotage-papyrus * {
   filter: blur(4px);
 }
 .post-comic-sans * {
-  font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+  font-family: "Comic Sans MS", "Comic Sans", cursive !important;
 }
 .post-papyrus * {
-  font-family: 'Papyrus', fantasy !important;
+  font-family: "Papyrus", fantasy !important;
 }

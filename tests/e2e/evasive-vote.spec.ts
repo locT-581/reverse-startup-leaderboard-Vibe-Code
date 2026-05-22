@@ -61,6 +61,9 @@ test.describe('Evasive Vote Button E2E', () => {
     const scoreText = await scoreLocator.textContent();
     const initialScore = scoreText ? parseInt(scoreText.replace(/[^0-9]/g, ''), 10) : 0;
 
+    // Scroll the post row into the center of the viewport to prevent header overlay issues
+    await postRow.evaluate(el => el.scrollIntoView({ block: 'center' }));
+
     return { uniqueTitle, postRow, initialScore };
   }
 
