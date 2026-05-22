@@ -49,7 +49,8 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const isValid = token ? await verifyJwt(token, JWT_SECRET) : false;
 
-  if (request.nextUrl.pathname.startsWith('/profile')) {
+  const pathname = request.nextUrl.pathname;
+  if (pathname === '/profile' || pathname === '/profile/') {
     if (!isValid) {
       const url = request.nextUrl.clone();
       url.pathname = '/auth';

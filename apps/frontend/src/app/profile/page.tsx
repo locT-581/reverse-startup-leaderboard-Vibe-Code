@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isTogglingMercy, setIsTogglingMercy] = useState(false);
+  const [shareStatus, setShareStatus] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -87,6 +88,19 @@ export default function ProfilePage() {
       } else {
         setError(response.error?.message || 'Profile update failed.');
       }
+    });
+  };
+
+  const handleShareProfile = () => {
+    if (!user) return;
+    const permalink = `${window.location.origin}/profile/${user.username}`;
+    navigator.clipboard.writeText(permalink).then(() => {
+      setShareStatus(true);
+      setTimeout(() => {
+        setShareStatus(false);
+      }, 2000);
+    }).catch((err) => {
+      console.error('Failed to copy profile link:', err);
     });
   };
 
@@ -150,6 +164,15 @@ export default function ProfilePage() {
         <Link href="/sabotage-store" className={styles.storeButton} data-testid="profile-sabotage-store">
           😈 Go to Sabotage Store
         </Link>
+
+        <button
+          type="button"
+          className={styles.shareProfileBtn}
+          onClick={handleShareProfile}
+          data-testid="share-profile-btn"
+        >
+          {shareStatus ? 'Copied! ✓' : 'Share Profile Link 🔗'}
+        </button>
 
         {success && <div className={styles.successMessage}>{success}</div>}
         {error && <div className={styles.errorMessage}>{error}</div>}

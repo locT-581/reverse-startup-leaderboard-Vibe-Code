@@ -226,7 +226,10 @@ export async function actionSyncMercyState(
       };
     }
 
-    return { success: true, data: data.data };
+    return {
+      success: true,
+      data: data.data
+    };
   } catch (err) {
     return {
       success: false,
@@ -234,3 +237,29 @@ export async function actionSyncMercyState(
     };
   }
 }
+
+export async function actionGetProfileByUsername(
+  username: string
+): Promise<ActionResponse<UserProfile>> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/profile/${encodeURIComponent(username)}`, {
+      method: 'GET',
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: { message: data.error?.message || 'Profile retrieval failed.' },
+      };
+    }
+
+    return { success: true, data: data.data };
+  } catch (err) {
+    return {
+      success: false,
+      error: { message: 'Failed to retrieve profile. Server did not respond.' },
+    };
+  }
+}
+

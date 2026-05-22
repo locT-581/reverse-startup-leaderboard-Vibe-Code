@@ -1,5 +1,5 @@
 # generated: 2026-05-18T09:50:34Z
-# last_updated: 2026-05-22T15:23:00+07:00
+# last_updated: 2026-05-22T15:37:00+07:00
 # project: Reverse Startup Leaderboard
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-18T09:50:34Z
-last_updated: 2026-05-22T15:23:00+07:00
+last_updated: 2026-05-22T15:37:00+07:00
 project: Reverse Startup Leaderboard
 project_key: NOKEY
 tracking_system: file-system
@@ -62,6 +62,6 @@ development_status:
   epic-4: in-progress
   4-1-anti-logic-reporting-system: done
   4-2-visual-penalties-the-clown-hat: done
-  4-3-viral-sharing-dynamic-previews: backlog
+  4-3-viral-sharing-dynamic-previews: done
   4-4-safe-chaos-protocol-screen-reader-bypass: backlog
   epic-4-retrospective: optional

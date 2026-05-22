@@ -179,4 +179,21 @@ export class AuthService {
       });
     }
   }
+
+  async getUserByUsername(username: string) {
+    const [user] = await this.db.select().from(schema.users).where(eq(schema.users.username, username)).limit(1);
+    if (!user) {
+      throw new BadRequestException({
+        success: false,
+        error: { message: `User with username '${username}' does not exist.` }
+      });
+    }
+
+    const { passwordHash: _, ...profile } = user;
+    return {
+      success: true,
+      data: profile
+    };
+  }
 }
+

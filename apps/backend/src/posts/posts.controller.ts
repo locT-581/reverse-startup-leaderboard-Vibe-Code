@@ -1,10 +1,15 @@
-import { Controller, Post, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Param, UseGuards, Request, BadRequestException, Get } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) { }
+
+  @Get(':id')
+  async getPostById(@Param('id') postId: string) {
+    return this.postsService.getPostById(postId);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -61,3 +66,4 @@ export class PostsController {
     return this.postsService.reportPost(req.user.sub, postId);
   }
 }
+

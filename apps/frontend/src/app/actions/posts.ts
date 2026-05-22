@@ -170,3 +170,29 @@ export async function actionReportPost(
     };
   }
 }
+
+export async function actionGetPostById(
+  postId: string
+): Promise<ActionResponse<any>> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/posts/${encodeURIComponent(postId)}`, {
+      method: 'GET',
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      return {
+        success: false,
+        error: { message: data.error?.message || 'Post retrieval failed.' },
+      };
+    }
+
+    return { success: true, data: data.data };
+  } catch (err) {
+    return {
+      success: false,
+      error: { message: 'Failed to retrieve post. Server did not respond.' },
+    };
+  }
+}
+

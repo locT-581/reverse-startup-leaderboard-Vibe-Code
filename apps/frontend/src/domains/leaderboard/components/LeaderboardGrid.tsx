@@ -46,6 +46,20 @@ export default function LeaderboardGrid() {
   const [reportingStates, setReportingStates] = useState<{ [postId: string]: boolean }>({});
   const [reportingError, setReportingError] = useState<{ [postId: string]: string | null }>({});
   const [isReporting, startReportTransition] = useTransition();
+  const [shareStatus, setShareStatus] = useState<{ [postId: string]: boolean }>({});
+
+  const handleSharePost = (postId: string) => {
+    const permalink = `${window.location.origin}/posts/${postId}`;
+    navigator.clipboard.writeText(permalink).then(() => {
+      setShareStatus((prev) => ({ ...prev, [postId]: true }));
+      setTimeout(() => {
+        setShareStatus((prev) => ({ ...prev, [postId]: false }));
+      }, 2000);
+    }).catch((err) => {
+      console.error('Failed to copy link:', err);
+    });
+  };
+
 
   const handleReport = (postId: string, authorId: string) => {
     if (currentUser?.id === authorId) {
@@ -227,8 +241,19 @@ export default function LeaderboardGrid() {
                     )}
                     <div className={styles.actionButtons}>
                       <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <button
+                          className={styles.shareBtn}
+                          onClick={() => handleSharePost(post.id)}
+                          aria-label={`Share link for post: ${post.title}`}
+                          data-testid="share-post-btn"
+                        >
+                          {shareStatus[post.id] ? 'Copied! ✓' : 'Share 🔗'}
+                        </button>
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                         <EvasiveButton targetId={post.id} targetType="post" />
                       </div>
+
                       {currentUser && (
                         <>
                           <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>

@@ -286,4 +286,72 @@ export class PostsService {
       },
     };
   }
+
+  async getPostById(postId: string) {
+    const rawPostList = await this.db
+      .select({
+        id: schema.posts.id,
+        title: schema.posts.title,
+        content: schema.posts.content,
+        wastedCalories: schema.posts.wastedCalories,
+        createdAt: schema.posts.createdAt,
+        updatedAt: schema.posts.updatedAt,
+        author: {
+          id: schema.users.id,
+          username: schema.users.username,
+          avatar: schema.users.avatar,
+          isMercyActive: schema.users.isMercyActive,
+          logicViolations: schema.users.logicViolations,
+        },
+      })
+      .from(schema.posts)
+      .innerJoin(schema.users, eq(schema.posts.authorId, schema.users.id))
+      .where(eq(schema.posts.id, postId))
+      .limit(1);
+
+    if (rawPostList.length === 0) {
+      throw new NotFoundException({
+        success: false,
+        error: { message: 'Post not found.' },
+      });
+    }
+
+    const post = rawPostList[0];
+
+    const rawComments = await this.db
+      .select({
+        id: schema.comments.id,
+        postId: schema.comments.postId,
+        content: schema.comments.content,
+        wastedCalories: schema.comments.wastedCalories,
+        createdAt: schema.comments.createdAt,
+        updatedAt: schema.comments.updatedAt,
+        author: {
+          id: schema.users.id,
+          username: schema.users.username,
+          avatar: schema.users.avatar,
+          isMercyActive: schema.users.isMercyActive,
+          logicViolations: schema.users.logicViolations,
+        },
+      })
+      .from(schema.comments)
+      .innerJoin(schema.users, eq(schema.comments.authorId, schema.users.id))
+      .where(eq(schema.comments.postId, postId));
+
+    // Sort comments by createdAt ascending
+    rawComments.sort((a, b) => {
+      const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt).getTime();
+      const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt).getTime();
+      return aTime - bTime;
+    });
+
+    return {
+      success: true,
+      data: {
+        ...post,
+        comments: rawComments,
+      },
+    };
+  }
 }
+
