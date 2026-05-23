@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import HostileInput from './HostileInput';
-import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
-import { actionCreatePost } from '../../../app/actions/posts';
-import { useMercyStore } from '../../../core/store/useMercyStore';
+import React, { useState, useEffect, useRef, useTransition } from 'react';
+import HostileInput from '@/domains/anti-ux/components/HostileInput';
+import AdCaptchaModal from '@/domains/anti-ux/components/AdCaptchaModal';
+import { actionCreatePost } from '@/app/actions/posts';
+import { useMercyStore } from '@/core/store/useMercyStore';
 import styles from './CreatePostModal.module.css';
 
 interface CreatePostModalProps {
@@ -18,7 +18,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
   const [content, setContent] = useState('');
   const [titleError, setTitleError] = useState(false);
   const [contentError, setContentError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
@@ -64,28 +64,27 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
     }
   };
 
-  const handleCaptchaSuccess = async () => {
-    setIsSubmitting(true);
+  const handleCaptchaSuccess = () => {
     setSubmitError(null);
     setSubmitSuccess(false);
 
-    const res = await actionCreatePost(title, content);
+    startTransition(async () => {
+      const res = await actionCreatePost(title, content);
 
-    setIsSubmitting(false);
-
-    if (res.success) {
-      setSubmitSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } else {
-      const errMsg = res.error?.message || 'Đề xuất mô hình thất bại.';
-      setSubmitError(errMsg);
-      throw new Error(errMsg);
-    }
+      if (res.success) {
+        setSubmitSuccess(true);
+        setTimeout(() => {
+          onClose();
+        }, 1500);
+      } else {
+        const errMsg = res.error?.message || 'Đề xuất mô hình thất bại.';
+        setSubmitError(errMsg);
+        throw new Error(errMsg);
+      }
+    });
   };
 
-  const isButtonDisabled = isSubmitting || titleError || contentError || !title.trim() || !content.trim();
+  const isButtonDisabled = isPending || titleError || contentError || !title.trim() || !content.trim();
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -155,7 +154,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 type="button"
                 className={styles.cancelBtn}
                 onClick={onClose}
-                disabled={isSubmitting}
+                disabled={isPending}
               >
                 Hủy
               </button>
@@ -164,7 +163,7 @@ export default function CreatePostModal({ isOpen, onClose }: CreatePostModalProp
                 className={styles.submitBtn}
                 disabled={isButtonDisabled}
               >
-                {isSubmitting ? 'Đang đề xuất...' : 'Đề xuất Mô hình'}
+                {isPending ? 'Đang đề xuất...' : 'Đề xuất Mô hình'}
               </button>
             </div>
           </form>

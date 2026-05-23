@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
 import Link from 'next/link';
-import HostileInput from './HostileInput';
-import { LeaderboardPost } from '../../../app/actions/leaderboard';
-import { UserProfile } from '../../../app/actions/auth';
-import { actionCreateComment } from '../../../app/actions/posts';
-import AdCaptchaModal from '../../anti-ux/components/AdCaptchaModal';
-import EvasiveButton from '../../anti-ux/components/EvasiveButton';
-import { useMercyStore } from '../../../core/store/useMercyStore';
+import HostileInput from '@/domains/anti-ux/components/HostileInput';
+import { LeaderboardPost } from '@/app/actions/leaderboard';
+import { UserProfile } from '@/app/actions/auth';
+import { actionCreateComment } from '@/app/actions/posts';
+import AdCaptchaModal from '@/domains/anti-ux/components/AdCaptchaModal';
+import EvasiveButton from '@/domains/anti-ux/components/EvasiveButton';
+import { useMercyStore } from '@/core/store/useMercyStore';
 import styles from './CommentSection.module.css';
-import MarkdownRenderer from '../../../shared/ui/MarkdownRenderer';
+import MarkdownRenderer from '@/shared/ui/MarkdownRenderer';
 
 const AVATAR_MAP: Record<string, string> = {
   avatar_clown: '🤡',
@@ -39,7 +39,7 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
   const mercyActive = useMercyStore((state) => state.isMercyActive);
   const [commentText, setCommentText] = useState('');
   const [hasError, setHasError] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isCaptchaOpen, setIsCaptchaOpen] = useState(false);
 
@@ -56,25 +56,24 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
     }
   };
 
-  const handleCaptchaSuccess = async () => {
-    setIsSubmitting(true);
+  const handleCaptchaSuccess = () => {
     setSubmitError(null);
 
-    const res = await actionCreateComment(post.id, commentText);
+    startTransition(async () => {
+      const res = await actionCreateComment(post.id, commentText);
 
-    setIsSubmitting(false);
-
-    if (res.success) {
-      setCommentText('');
-      setHasError(false);
-    } else {
-      const errMsg = res.error?.message || 'Gửi giải pháp thất bại.';
-      setSubmitError(errMsg);
-      throw new Error(errMsg);
-    }
+      if (res.success) {
+        setCommentText('');
+        setHasError(false);
+      } else {
+        const errMsg = res.error?.message || 'Gửi giải pháp thất bại.';
+        setSubmitError(errMsg);
+        throw new Error(errMsg);
+      }
+    });
   };
 
-  const isButtonDisabled = isSubmitting || hasError || !commentText.trim();
+  const isButtonDisabled = isPending || hasError || !commentText.trim();
 
   return (
     <div className={styles.commentsContainer} onClick={(e) => e.stopPropagation()}>
@@ -151,7 +150,7 @@ export default function CommentSection({ post, currentUser }: CommentSectionProp
               className={styles.submitBtn}
               disabled={isButtonDisabled}
             >
-              {isSubmitting ? 'Đang gửi Giải pháp...' : 'Gửi Giải pháp'}
+              {isPending ? 'Đang gửi Giải pháp...' : 'Gửi Giải pháp'}
             </button>
           </form>
           <AdCaptchaModal

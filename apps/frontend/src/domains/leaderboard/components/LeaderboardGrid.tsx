@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useTransition } from 'react';
-import { actionGetLeaderboard, LeaderboardPost } from '../../../app/actions/leaderboard';
-import { actionReportPost } from '../../../app/actions/posts';
-import { socket } from '../../../core/api/socket.client';
+import { actionGetLeaderboard, LeaderboardPost } from '@/app/actions/leaderboard';
+import { actionReportPost } from '@/app/actions/posts';
+import { socket } from '@/core/api/socket.client';
 import GoldenRaspberryBadge from './GoldenRaspberryBadge';
 import CommentSection from './CommentSection';
-import { useAuthStore } from '../../../core/store/useAuthStore';
-import EvasiveButton from '../../anti-ux/components/EvasiveButton';
-import SabotageSelectionModal from '../../sabotage/components/SabotageSelectionModal';
-import { useChaosStore } from '../../../core/store/useChaosStore';
+import { useAuthStore } from '@/core/store/useAuthStore';
+import EvasiveButton from '@/domains/anti-ux/components/EvasiveButton';
+import SabotageSelectionModal from '@/domains/sabotage/components/SabotageSelectionModal';
+import { useChaosStore } from '@/core/store/useChaosStore';
 import styles from './LeaderboardGrid.module.css';
-import MarkdownRenderer from '../../../shared/ui/MarkdownRenderer';
+import MarkdownRenderer from '@/shared/ui/MarkdownRenderer';
 
 const AVATAR_MAP: Record<string, string> = {
   avatar_clown: '🤡',
